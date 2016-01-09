@@ -26,19 +26,23 @@ function v_c=controller_away_(uu,P)
         robot(:,i)   = uu(1+3*(i-1):3+3*(i-1));
     end
     NN = 3*P.num_robots;
+
     % robots - opponent
     for i=1:P.num_robots,
         opponent(:,i)   = uu(1+3*(i-1)+NN:3+3*(i-1)+NN);
     end
     NN = NN + 3*P.num_robots;
+
     % ball
     ball = [uu(1+NN); uu(2+NN)];
     NN = NN + 2;
+
     % score: own team is score(1), opponent is score(2)
     score = [uu(1+NN); uu(2+NN)];
     NN = NN + 2;
+
     % current time
-    t      = uu(1+NN);
+    t = uu(1+NN);
 
     % robot #1 positions itself behind ball and rushes the goal.
     v1 = play_rush_goal(robot(:,1), ball, P);
@@ -46,7 +50,6 @@ function v_c=controller_away_(uu,P)
 
     % robot #2 stays on line, following the ball, facing the goal
     v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
-
 
     % output velocity commands to robots
     v1 = utility_saturate_velocity(v1,P);
@@ -63,18 +66,17 @@ end
 % plays at a lower level.  For example, switching between offense and
 % defense would be a strategy.
 function v = play_rush_goal(robot, ball, P)
-  % normal vector from ball to goal
-  n = P.goal-ball;
-  n = n/norm(n);
-  % compute position 10cm behind ball, but aligned with goal.
-  position = ball - 0.2*n;
+    % normal vector from ball to goal
+    n = P.goal-ball;
+    n = n/norm(n);
+    % compute position 10cm behind ball, but aligned with goal.
+    position = ball - 0.2*n;
 
-  if norm(position-robot(1:2))<.21,
+    if norm(position-robot(1:2))<.21,
       v = skill_go_to_point(robot, P.goal, P);
-  else
+    else
       v = skill_go_to_point(robot, position, P);
-  end
-
+    end
 end
 
 %-----------------------------------------
@@ -83,7 +85,6 @@ end
 %   x_pos.  Angle always faces the goal.
 
 function v=skill_follow_ball_on_line(robot, ball, x_pos, P)
-
     % control x position to stay on current line
     vx = -P.control_k_vx*(robot(1)-x_pos);
 
@@ -103,7 +104,6 @@ end
 %   x_pos.  Angle always faces the goal.
 
 function v=skill_go_to_point(robot, point, P)
-
     % control x position to stay on current line
     vx = -P.control_k_vx*(robot(1)-point(1));
 
@@ -130,5 +130,3 @@ function v = utility_saturate_velocity(v,P)
     if v(3) >  P.robot_max_omega, v(3) =  P.robot_max_omega; end
     if v(3) < -P.robot_max_omega, v(3) = -P.robot_max_omega; end
 end
-
-

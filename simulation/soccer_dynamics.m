@@ -3,7 +3,7 @@
 % and robot to robot interactions are modeled by nulling the velocity
 % vector of the robot in the direction of the obstacle.
 %
-% Modified: 
+% Modified:
 %   2/11/2014 - R. Beard
 %   2/18/2014 - R. Beard
 %
@@ -52,7 +52,6 @@ switch flag,
   %%%%%%%%%%%%%%%%%%%%
   otherwise
     DAStudio.error('Simulink:blocks:unhandledFlag', num2str(flag));
-
 end
 
 % end sfuntmpl
@@ -76,7 +75,7 @@ function [sys,x0,str,ts,simStateCompliance]=mdlInitializeSizes(P)
 sizes = simsizes;
 
 sizes.NumContStates  = 6*P.num_robots + 4;
-sizes.NumDiscStates  = 6*P.num_robots + 4 + 2; % last two are score 
+sizes.NumDiscStates  = 6*P.num_robots + 4 + 2; % last two are score
 sizes.NumOutputs     = 6*P.num_robots + 2 + 2;
 sizes.NumInputs      = 6*P.num_robots;
 sizes.DirFeedthrough = 0;
@@ -145,13 +144,13 @@ function sys=mdlDerivatives(t,x,u, P)
     home_Omega = reshape(u(1:3*P.num_robots),3,P.num_robots);
         NN = 3*P.num_robots;
     away_Omega = reshape(u(1+NN:3*P.num_robots+NN),3,P.num_robots);
-    
+
     % correct for re-set dynamics
     home_robot = home_robot-home_robot0;
     away_robot = away_robot-away_robot0;
     ball = ball-ball0;
     ball_vel = ball_vel-ball_vel0;
-    
+
     % home robot dynamics
     for i=1:P.num_robots,
         R = [...
@@ -164,7 +163,7 @@ function sys=mdlDerivatives(t,x,u, P)
         v = saturate_velocity(v,P);
         home_robotdot(:,i) = v;
     end
-    
+
     % home robot dynamics
     for i=1:P.num_robots,
         R = [...
@@ -178,7 +177,7 @@ function sys=mdlDerivatives(t,x,u, P)
         away_robotdot(:,i) = v;
     end
 
-    
+
     % ball dynamics including interactions
     F_walls = force_on_ball_from_walls(ball,P);
     F_home_robots = force_on_ball_from_home_robots(ball,ball_vel,home_robot,P);
@@ -221,14 +220,14 @@ function sys=mdlUpdate(t,x,u,P)
     ball_vel0 = x(1+NN:2+NN);
         NN = NN + 2;
     score = x(1+NN:2+NN);
-    
+
     % reset the game if a goal has been scored,
     if (ball(1)-ball0(1)>P.field_length/2+.05 && (ball(2)-ball0(2) < P.goal_width/2) && (ball(2)-ball0(2) > -P.goal_width/2)) % home team scored
         home_robot0 = home_robot - P.home_team_initial_configurations;
         away_robot0 = away_robot - P.away_team_initial_configurations;
         ball0 = ball - P.ball_initial_position;
         ball_vel0 = ball_vel - P.ball_initial_velocity;
-        score(1)=score(1)+1;  
+        score(1)=score(1)+1;
     elseif (ball(1)-ball0(1)<-P.field_length/2-.05 && (ball(2)-ball0(2) < P.goal_width/2) && (ball(2)-ball0(2) > -P.goal_width/2)), % away team scored
         home_robot0 = home_robot - P.home_team_initial_configurations;
         away_robot0 = away_robot - P.away_team_initial_configurations;
@@ -236,8 +235,8 @@ function sys=mdlUpdate(t,x,u,P)
         ball_vel0 = ball_vel - P.ball_initial_velocity;
         score(2)=score(2)+1;
     end
-    
-    
+
+
 sys = [home_robot0; away_robot0; ball0; ball_vel0; score];
 
 
@@ -296,7 +295,7 @@ sys = [];
 %=============================================================================
 %
 function F_walls = force_on_ball_from_walls(ball,P)
-    
+
     F_walls = [0;0];
     % right wall
     if ball(1)>=P.field_length/2-P.ball_radius,
@@ -330,7 +329,7 @@ function F_walls = force_on_ball_from_walls(ball,P)
 %=============================================================================
 %
 function F_robots = force_on_ball_from_home_robots(ball,ball_vel,robot,P)
-    
+
     F_robots = [0;0];
     for i=1:P.num_robots,
        r = ball - robot(1:2,i);
@@ -341,7 +340,7 @@ function F_robots = force_on_ball_from_home_robots(ball,ball_vel,robot,P)
                      F_robots = F_robots + P.ball_spring*(P.ball_radius+n'*r)*n;
                 end
             else %if (n'*r<=0)&& (r'*ball_vel<=0), % ball is behind robot and moving toward robot
-               F_robots = F_robots + P.ball_spring*(P.ball_radius+P.robot_radius-norm(r))*r/norm(r);      
+               F_robots = F_robots + P.ball_spring*(P.ball_radius+P.robot_radius-norm(r))*r/norm(r);
             end
        end
     end
@@ -353,7 +352,7 @@ function F_robots = force_on_ball_from_home_robots(ball,ball_vel,robot,P)
 %=============================================================================
 %
 function F_robots = force_on_ball_from_away_robots(ball,ball_vel,robot,P)
-    
+
     F_robots = [0;0];
     for i=1:P.num_robots,
        r = ball + robot(1:2,i);
@@ -364,11 +363,11 @@ function F_robots = force_on_ball_from_away_robots(ball,ball_vel,robot,P)
                      F_robots = F_robots + P.ball_spring*(P.ball_radius+n'*r)*n;
                 end
             else %if (n'*r<=0)&& (r'*ball_vel<0), % ball is behind robot and moving toward robot
-               F_robots = F_robots + P.ball_spring*(P.ball_radius+P.robot_radius-norm(r))*r/norm(r);      
+               F_robots = F_robots + P.ball_spring*(P.ball_radius+P.robot_radius-norm(r))*r/norm(r);
             end
        end
      end
-    
+
     %
 %=============================================================================
 % robot_wall_interaction
@@ -376,7 +375,7 @@ function F_robots = force_on_ball_from_away_robots(ball,ball_vel,robot,P)
 %=============================================================================
 %
 function v = robot_wall_interaction(robot,v,P)
-    
+
     % right wall
     if robot(1)>=P.field_length/2-P.robot_radius,
         n = [-1; 0; 0];
@@ -406,8 +405,7 @@ function v = robot_wall_interaction(robot,v,P)
         end
     end
 
-    
-            
+
 %=============================================================================
 % robot_robot_interaction
 % robot interactions with other robots
@@ -427,7 +425,7 @@ function v = robot_robot_interaction(robot,i,v,opponent,P)
             end
         end
     end
-    
+
     % interactions with opponent
     for j = 1:P.num_robots,
         r = -opponent(1:2,j)-robot(1:2,i);
@@ -439,7 +437,7 @@ function v = robot_robot_interaction(robot,i,v,opponent,P)
             end
         end
     end
-    
+
 %=============================================================================
 % saturate_velocity
 % 	saturate the velocity of the robot to mimic real world constraints
@@ -452,4 +450,3 @@ function v = saturate_velocity(v,P)
     if v(2) < -P.robot_max_vy,    v(2) = -P.robot_max_vy;    end
     if v(3) >  P.robot_max_omega, v(3) =  P.robot_max_omega; end
     if v(3) < -P.robot_max_omega, v(3) = -P.robot_max_omega; end
-

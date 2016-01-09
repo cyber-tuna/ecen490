@@ -1,12 +1,11 @@
 % draw robot soccer field, robots, and ball
 %
-% Modified: 
+% Modified:
 %   2/11/2014 - R. Beard
 %   2/18/2014 - R. Beard
 %   1/4/2016  - Jacob White
 %
 function drawEnvironment(uu,P)
-
     % process inputs to function
     % robots for home team  (shooting left to right)
     for i=1:P.num_robots,
@@ -30,14 +29,14 @@ function drawEnvironment(uu,P)
     NN = NN + 2;
     % current time
     t      = uu(1+NN);
-    
-    % define persistent variables 
+
+    % define persistent variables
     persistent rob_home_handle;  % figure handle for home team
     persistent rob_away_handle;  % figure handle for away team
     persistent ball_handle;      % figure handle for ball
     persistent score_handle;     % figure handle for scores
     persistent score_old;        % old score handle
-    
+
     % first time function is called, initialize plot and persistent vars
     if t==0,
         figure(1), clf
@@ -49,16 +48,16 @@ function drawEnvironment(uu,P)
             rob_away_handle(i) = drawRobotAway(rob_away(i),[],P);
         end
         ball_handle = drawBall(ball,[],P);
-%        xhat_handle = drawStateEstimate(xhat,S,[],P);
-                
+        %xhat_handle = drawStateEstimate(xhat,S,[],P);
+
     % at every other time step, redraw MAV
-    else 
+    else
         for i=1:P.num_robots,
             drawRobotHome(rob_home(i),rob_home_handle(i),P);
             drawRobotAway(rob_away(i),rob_away_handle(i),P);
         end
         drawBall(ball,ball_handle,P);
-%        drawStateEstimate(xhat,S,xhat_handle,P);
+        %drawStateEstimate(xhat,S,xhat_handle,P);
         if norm(score-score_old)~=0,
             score_old = score;
             drawScore(score(1),score(2),score_handle,P);
@@ -79,8 +78,8 @@ function handle = drawRobotHome(rob,handle,P)
         handle = fill(pts(1,:), pts(2,:),P.home_team_color);
     else
         set(handle,'XData',pts(1,:),'YData',pts(2,:));
-    end  
-end 
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function handle = drawRobotAway(rob,handle,P)
@@ -99,7 +98,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function handle = drawBall(ball,handle,P)
-    
+
     phi = [0:.1:2*pi];
     pts = P.ball_radius*[cos(phi); sin(phi)];
     pts = pts + repmat([ball.x; ball.y],1,size(pts,2));
@@ -109,7 +108,7 @@ function handle = drawBall(ball,handle,P)
     else
         set(handle,'XData',pts(1,:),'YData',pts(2,:));
     end
-end 
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display Score
@@ -122,7 +121,7 @@ function handle = drawScore(homescore, awayscore,handle,P)
         set(handle(1),'String',sprintf('Home: %d',homescore));
         set(handle(2),'String',sprintf('Away: %d',awayscore));
     end
-end 
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,7 +139,7 @@ function handle = drawStateEstimate(xhat,S,handle,P)
         set(handle(1),'XData',xhat(1),'YData',xhat(2));
         set(handle(2),'XData',pts(1,:),'YData',pts(2,:));
     end
-end 
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,17 +155,17 @@ function drawField(P)
     axis([-L/2-D,L/2+D,-W/2-D,W/2+D]);
     X = [-L/2,L/2,L/2,-L/2];
     Y = [W/2,W/2,-W/2,-W/2];
-    fill(X,Y,P.field_color); 
+    fill(X,Y,P.field_color);
     hold on
     axis off
     axis image
-    
+
     % lines on the field
     plot([0,0],[-W/2,W/2],'k') % center line
     plot([L/2,L/2-L/10,L/2-L/10,L/2],[-W/3,-W/3,W/3,W/3],'k') % right goal box
     plot([-L/2,-L/2+L/10,-L/2+L/10,-L/2],[-W/3,-W/3,W/3,W/3],'k') % left goal box
     plot(W/4*cos(phi),W/4*sin(phi),'k') % center circle
-    
+
     % border
     fill([L/2,L/2+B,L/2+B,L/2],[-W/2,-W/2,W/2,W/2],[0,0,0]) % left border
     fill([-L/2,-L/2-B,-L/2-B,-L/2],[-W/2,-W/2,W/2,W/2],[0,0,0]) % right border
@@ -176,11 +175,4 @@ function drawField(P)
     % goals
     fill([L/2,L/2+L/40,L/2+L/40,L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % left goal
     fill([-L/2,-L/2-L/40,-L/2-L/40,-L/2],[-G/2,-G/2,G/2,G/2],P.goal_color) % right goal
-        
-  
-end 
-
- 
-  
-
-  
+end

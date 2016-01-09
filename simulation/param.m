@@ -1,6 +1,6 @@
 % Parameter file for robot soccer simulator
 %
-% Modified: 
+% Modified:
 %   2/11/2014 - R. Beard
 %   1/8/2015 - R. Beard
 %
@@ -30,6 +30,7 @@ P.robot_radius = 0.1;  % 4 inches
 P.robot_max_vx = .8; % (m/s) max speed in x direction
 P.robot_max_vy = .5; % (m/s) max speed in y direction
 P.robot_max_omega = 2*pi; % 360 degrees/sec
+
 % the geometry assumes 60 degree equally distributed wheels at distance 5cm
 % from center
 phi = 60*pi/180;
@@ -39,6 +40,7 @@ r3 = P.robot_radius*[0;1];
 s1 = [-sin(phi); cos(phi)];
 s2 = [-sin(phi); -cos(phi)];
 s3 = [1; 0];
+
 % kinematic matrix relating wheel velocity to body velociy
 P.M3 = 1/P.wheel_radius*[...
     s1(1), s1(2), (s1(2)*r1(1)-s1(1)*r1(2));...
@@ -67,14 +69,13 @@ P.control_k_vx  = 5;  % gain for proportional control of x-position
 P.control_k_vy  = 5;  % gain for proportional control of y-position
 P.control_k_phi = 2;  % gain for proportional angle control
 
-
 % camera parameters
 P.camera_sample_rate = 10*P.control_sample_rate;
+
 % noise levels on the camera
 P.camera_sigma_ball = 0.01; % units are meters
 P.camera_sigma_robot_position = 0.01; % units are meters
 P.camera_sigma_robot_angle = 1*pi/180; % units are radians
-
 
 % parameters for the Kalman filter
 P.Q_ownteam = diag([1^2,1^2,(2*pi/180)^2]);
@@ -83,16 +84,7 @@ P.Q_opponent = diag([1^2,1^2,(2*pi/180)^2]);
 P.R_opponent = diag([P.camera_sigma_robot_position^2; P.camera_sigma_robot_position^2; P.camera_sigma_robot_angle^2]);
 P.Q_ball = diag([10^2,10^2,.1^2]);
 P.R_ball = diag([P.camera_sigma_ball^2; P.camera_sigma_ball^2]);
-  
 
-
-
-%% Our added code
-P.Goalie_x_pos = -11*P.field_width/12;
-P.Goalie_rot_lim = 75*pi/180
-
-
-
-
-    
-
+%% BaeMax added code
+P.Goalie_x_pos = -11 * P.field_width/12;
+P.Goalie_rot_lim = 75 * (pi/180); % 75 degrees converted to radians
