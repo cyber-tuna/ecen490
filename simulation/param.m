@@ -87,4 +87,5 @@ P.R_ball = diag([P.camera_sigma_ball^2; P.camera_sigma_ball^2]);
 
 %% BaeMax added code
 P.Goalie_x_pos = -11 * P.field_width/12;
+P.Midfield_x_pos = -11 * P.field_width/12;
 P.Goalie_rot_lim = 75 * (pi/180); % 75 degrees converted to radians

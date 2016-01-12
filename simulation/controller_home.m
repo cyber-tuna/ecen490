@@ -48,17 +48,53 @@ function v_c=controller_home_(uu,P)
 
     % robot #1 positions itself behind ball and rushes the goal.
     %v1 = play_rush_goal(robot(:,1), ball, P);
-    v1 = [0;0;90*pi/180];
+    %v1 = [0;0;90*pi/180];
+
+    %v1 = skill_play_midfield(robot(:,2), ball, P);
 
     % robot #2 stays on line, following the ball, facing the goal
     %v2 = skill_follow_ball_on_line(robot(:,2), ball, -2*P.field_width/3, P);
-    v2 = skill_play_goalie(robot(:,2), ball, P);
+    %v2 = skill_play_goalie(robot(:,2), ball, P);
 
     % output velocity commands to robots
+    %v1 = utility_saturate_velocity(v1,P);
+    %v2 = utility_saturate_velocity(v2,P);
+
+
+    % v_c = [v1; v2];
+    v_c = strategy_strong_defense(robot, opponent, ball, P, t);
+end
+
+%%-------------------------------------------
+%% Strategies
+%%-------------------------------------------
+
+%-----------------------------------------
+% strategy - strategy_strong_defense
+% - V1 will always be rushing
+% - V2 switches between midfield and goalie
+function v_c = strategy_strong_defense(robot, opponent, ball, P, t)
+    defense = 0;
+    offense = 1;
+    playtype = offense;
+
+    % V2 is always rushing
+
+    v1 = play_rush_goal(robot(:,1), ball, P);
+
+    % if the ball goes to the left of the mid point line V2 switches to goalie,
+    % otherwise it is midfielder
+    if(ball(1) < 0)
+        v2 = skill_play_goalie(robot(:,2), ball, P);
+    else
+        v2 = skill_play_midfield(robot(:,2), ball, P);
+    end
+
     v1 = utility_saturate_velocity(v1,P);
     v2 = utility_saturate_velocity(v2,P);
     v_c = [v1; v2];
 end
+
 
 %-----------------------------------------
 % play - rush goal
@@ -155,9 +191,24 @@ function v=skill_play_goalie(robot, ball, P)
     v = [vx; vy; omega];
 end
 
+function v=skill_play_midfield(robot, ball, P)
+
+    vx = -P.control_k_vx*(robot(1) - P.field_width/12);
+
+    % control y position to match the ball's y-position
+    vy = -P.control_k_vy*(robot(2)-ball(2));
+
+    % control angle to -pi/2
+    theta_d = atan2(P.goal(2)-robot(2), P.goal(1)-robot(1));
+    omega = -P.control_k_phi*(robot(3) - theta_d);
+
+    v = [vx; vy; omega];
+
+end
+
 %------------------------------------------
 % utility - saturate_velocity
-% 	saturate the commanded velocity
+%   saturate the commanded velocity
 %
 function v = utility_saturate_velocity(v,P)
     if v(1) >  P.robot_max_vx,    v(1) =  P.robot_max_vx;    end
