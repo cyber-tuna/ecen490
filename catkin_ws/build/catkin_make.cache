@@ -1,0 +1,2 @@
+publisher_subscriber
+-DCATKIN_DEVEL_PREFIX=/home/ecestudent/ecen490/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/ecestudent/ecen490/catkin_ws/install -G Unix Makefiles

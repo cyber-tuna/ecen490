@@ -1,0 +1,8 @@
+prefix=/home/ecestudent/ecen490/catkin_ws/install
+
+Name: publisher_subscriber
+Description: Description of publisher_subscriber
+Version: 0.0.1
+Cflags: 
+Libs: -L/home/ecestudent/ecen490/catkin_ws/install/lib 
+Requires: 
