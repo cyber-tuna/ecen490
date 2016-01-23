@@ -44,9 +44,10 @@ def talker():
     rospy.init_node('talker', anonymous=True)
     rate = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
-        hello_str = "hello world %s" % rospy.get_time()
-        rospy.loginfo(hello_str)
-        pub.publish(hello_str)
+        #hello_str = "hello world %s" % rospy.get_time()
+        command = str(raw_input("Enter command: "))
+        rospy.loginfo(command)
+        pub.publish(command)
         rate.sleep()
 
 if __name__ == '__main__':
