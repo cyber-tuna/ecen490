@@ -1,0 +1,6 @@
+/home/odroid/ecen490/catkin_odroid_ws/install/_setup_util.py
+/home/odroid/ecen490/catkin_odroid_ws/install/env.sh
+/home/odroid/ecen490/catkin_odroid_ws/install/setup.bash
+/home/odroid/ecen490/catkin_odroid_ws/install/setup.sh
+/home/odroid/ecen490/catkin_odroid_ws/install/setup.zsh
+/home/odroid/ecen490/catkin_odroid_ws/install/.rosinstall

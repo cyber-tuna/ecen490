@@ -1,0 +1,2 @@
+subscriber
+-DCATKIN_DEVEL_PREFIX=/home/odroid/ecen490/catkin_odroid_ws/devel -DCMAKE_INSTALL_PREFIX=/home/odroid/ecen490/catkin_odroid_ws/install -G Unix Makefiles

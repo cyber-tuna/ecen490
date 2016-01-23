@@ -1,0 +1,8 @@
+prefix=/home/odroid/ecen490/catkin_odroid_ws/install
+
+Name: subscriber
+Description: Description of subscriber
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/odroid/ecen490/catkin_odroid_ws/install/lib 
+Requires: 
