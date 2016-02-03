@@ -74,8 +74,10 @@ double cam_matrix[3][3] = {  {513,  0.0,  315.6},
                           };
 
 // Declaration of the 5 objects
-Robot home1(HOME), home2(HOME);
-Robot away1(AWAY), away2(AWAY);
+Robot home1(HOME);
+Robot home2(HOME);
+Robot away1(AWAY);
+Robot away2(AWAY);
 Ball ball;
 
 // Globals used for processing threads
@@ -100,20 +102,20 @@ void saveSettings() {
   const string a2 = "Away2";
   const string b = "Ball";
   const string f = "Field";
-  int tempH, tempS, tempV;
+  int tempH, tempS, tempV, tempX, tempY, tempA;
 
   // Print human-readable header for settings file
   of << "#############################################################" << "\n";
   of << "# This settings file contains the color calibration settings" << "\n";
   of << "# Format: " << "\n";
-  of << "# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
+  of << "# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax] [Xpos] [Ypos] [Angle]" << "\n";
   of << "# [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]" << "\n";
   of << "# [Field] [x_center_pos] [y_center_pos] [width] [height]" << "\n";
   of << "#############################################################" << "\n";
   of << "\n\n";
 
   // Robot Save format:
-  // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+  // [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax] [xpos] [ypos]
   tempH = home1.getHSVmin().val[0];
   tempS = home1.getHSVmin().val[1];
   tempV = home1.getHSVmin().val[2];
@@ -121,34 +123,38 @@ void saveSettings() {
   tempH = home1.getHSVmax().val[0];
   tempS = home1.getHSVmax().val[1];
   tempV = home1.getHSVmax().val[2];
-  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempX = home1.get_x_pos();
+  tempY = home1.get_y_pos();
+  tempA = home1.getAngle();
+  of << " " << tempX << " " << tempY << " " << tempA << "\n";
 
-  tempH = home2.getHSVmin().val[0];
-  tempS = home2.getHSVmin().val[1];
-  tempV = home2.getHSVmin().val[2];
-  of << h2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
-  tempH = home2.getHSVmax().val[0];
-  tempS = home2.getHSVmax().val[1];
-  tempV = home2.getHSVmax().val[2];
-  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+  // tempH = home2.getHSVmin().val[0];
+  // tempS = home2.getHSVmin().val[1];
+  // tempV = home2.getHSVmin().val[2];
+  // of << h2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  // tempH = home2.getHSVmax().val[0];
+  // tempS = home2.getHSVmax().val[1];
+  // tempV = home2.getHSVmax().val[2];
+  // of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
-  tempH = away1.getHSVmin().val[0];
-  tempS = away1.getHSVmin().val[1];
-  tempV = away1.getHSVmin().val[2];
-  of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
-  tempH = away1.getHSVmax().val[0];
-  tempS = away1.getHSVmax().val[1];
-  tempV = away1.getHSVmax().val[2];
-  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+  // tempH = away1.getHSVmin().val[0];
+  // tempS = away1.getHSVmin().val[1];
+  // tempV = away1.getHSVmin().val[2];
+  // of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  // tempH = away1.getHSVmax().val[0];
+  // tempS = away1.getHSVmax().val[1];
+  // tempV = away1.getHSVmax().val[2];
+  // of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
-  tempH = away2.getHSVmin().val[0];
-  tempS = away2.getHSVmin().val[1];
-  tempV = away2.getHSVmin().val[2];
-  of << a2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
-  tempH = away2.getHSVmax().val[0];
-  tempS = away2.getHSVmax().val[1];
-  tempV = away2.getHSVmax().val[2];
-  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+  // tempH = away2.getHSVmin().val[0];
+  // tempS = away2.getHSVmin().val[1];
+  // tempV = away2.getHSVmin().val[2];
+  // of << a2 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  // tempH = away2.getHSVmax().val[0];
+  // tempS = away2.getHSVmax().val[1];
+  // tempV = away2.getHSVmax().val[2];
+  // of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
 
   // Ball Save format:
@@ -162,8 +168,9 @@ void saveSettings() {
   tempV = ball.getHSVmax().val[2];
   of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
+
   // Field Save format:
-  // [Field] [x_pos] [y_pos] [width] [height]
+  // [Field] [x_center] [y_center] [width] [height]
   of << f << " " << field_center_x << " " << field_center_y;
   of << " " << field_width << " " <<  field_height << "\n";
 
@@ -378,16 +385,16 @@ void calibrateField(VideoCapture capture) {
   //3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
   //the max value the trackbar can move (eg. H_HIGH),
   //and the function that is called whenever the trackbar is moved(eg. on_trackbar)
-  createTrackbar( "Field Center Y", trackbarWindowName, &field_center_y_min, field_center_y_max, on_trackbar );
-  createTrackbar( "Field Center X", trackbarWindowName, &field_center_x_min, field_center_x_max, on_trackbar );
-  createTrackbar( "Field Height", trackbarWindowName, &field_height_min, field_height_max, on_trackbar );
-  createTrackbar( "Field Width", trackbarWindowName, &field_width_min, field_width_max, on_trackbar );
+  createTrackbar("Field Center Y", trackbarWindowName, &field_center_y_min, field_center_y_max, on_trackbar );
+  createTrackbar("Field Center X", trackbarWindowName, &field_center_x_min, field_center_x_max, on_trackbar );
+  createTrackbar("Field Height", trackbarWindowName, &field_height_min, field_height_max, on_trackbar );
+  createTrackbar("Field Width", trackbarWindowName, &field_width_min, field_width_max, on_trackbar );
 
   // Set Trackbar Initial Positions
-  setTrackbarPos( "Field Center Y", trackbarWindowName, field_center_y);
-  setTrackbarPos( "Field Center X", trackbarWindowName, field_center_x);
-  setTrackbarPos( "Field Height", trackbarWindowName, field_height);
-  setTrackbarPos( "Field Width", trackbarWindowName, field_width);
+  setTrackbarPos("Field Center Y", trackbarWindowName, field_center_y);
+  setTrackbarPos("Field Center X", trackbarWindowName, field_center_x);
+  setTrackbarPos("Field Height", trackbarWindowName, field_height);
+  setTrackbarPos("Field Width", trackbarWindowName, field_width);
 
   // Wait forever until user sets the values
   while (1) {
@@ -395,10 +402,10 @@ void calibrateField(VideoCapture capture) {
     //undistortImage(cameraFeed);
 
     // Wait for user to set values
-    field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
-    field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
-    field_height = getTrackbarPos( "Field Height", trackbarWindowName);
-    field_width = getTrackbarPos( "Field Width", trackbarWindowName);
+    field_center_y = getTrackbarPos("Field Center Y", trackbarWindowName);
+    field_center_x = getTrackbarPos("Field Center X", trackbarWindowName);
+    field_height = getTrackbarPos("Field Height", trackbarWindowName);
+    field_width = getTrackbarPos("Field Width", trackbarWindowName);
 
     field_origin_x = field_center_x - (field_width/2);
     field_origin_y = field_center_y - (field_height/2);
@@ -420,10 +427,10 @@ void calibrateField(VideoCapture capture) {
     char pressedKey;
     pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
     if (pressedKey == '\n') {
-      field_center_y = getTrackbarPos( "Field Center Y", trackbarWindowName);
-      field_center_x = getTrackbarPos( "Field Center X", trackbarWindowName);
-      field_height = getTrackbarPos( "Field Height", trackbarWindowName);
-      field_width = getTrackbarPos( "Field Width", trackbarWindowName);
+      field_center_y = getTrackbarPos("Field Center Y", trackbarWindowName);
+      field_center_x = getTrackbarPos("Field Center X", trackbarWindowName);
+      field_height = getTrackbarPos("Field Height", trackbarWindowName);
+      field_width = getTrackbarPos("Field Width", trackbarWindowName);
 
       printf("\n\nField Values Saved!\n");
       printf("Field Center Y: %d\n", field_center_y);
@@ -440,10 +447,10 @@ void calibrateField(VideoCapture capture) {
 void runFullCalibration(VideoCapture capture) {
   restoreSettings();
   calibrateField(capture);
-  ball.calibrateBall(capture);
+  //ball.calibrateBall(capture);
   home1.calibrateRobot(capture);
   //Home2.calibrateRobot(capture);
-  away1.calibrateRobot(capture);
+  //away1.calibrateRobot(capture);
   //Away2.calibrateRobot(capture);
   saveSettings();
 }
@@ -573,7 +580,6 @@ int main(int argc, char* argv[]) {
   Mat BGR;// BGR mat
 
 	//video capture object to acquire webcam feed
-	// const string videoStreamAddress = "http://192.168.1.90/mjpg/video.mjpg";
   const string videoStreamAddress = "http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg";
 	VideoCapture capture;
   capture.open(videoStreamAddress); //set to 0 to use the webcam

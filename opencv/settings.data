@@ -1,15 +1,12 @@
 #############################################################
 # This settings file contains the color calibration settings
-# Format: 
-# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
+# Format:
+# [RobotName] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax] [Xpos] [Ypos] [Theta]
 # [Ball] [Hmin] [Smin] [Vmin] [Hmax] [Smax] [Vmax]
 # [Field] [x_center_pos] [y_center_pos] [width] [height]
 #############################################################
 
 
-Home1 0 0 224 150 221 256
-Home2 0 0 235 5 255 255
-Away1 166 162 0 220 217 255
-Away2 103 67 0 138 217 255
+Home1 37 72 144 86 96 219 185 79
 Ball 163 94 159 216 144 256
-Field 313 265 601 421
+Field 310 263 610 425

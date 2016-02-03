@@ -66,80 +66,79 @@ void Robot::calibrateRobot(VideoCapture capture) {
   createHSVTrackbars();
 
   // Set Trackbar intial values
-  setTrackbarPos( "H_MIN", trackbarWindowName, this->getHSVmin().val[0]);
-  setTrackbarPos( "H_MAX", trackbarWindowName, this->getHSVmax().val[0]);
-  setTrackbarPos( "S_MIN", trackbarWindowName, this->getHSVmin().val[1]);
-  setTrackbarPos( "S_MAX", trackbarWindowName, this->getHSVmax().val[1]);
-  setTrackbarPos( "V_MIN", trackbarWindowName, this->getHSVmin().val[2]);
-  setTrackbarPos( "V_MAX", trackbarWindowName, this->getHSVmax().val[2]);
+  setTrackbarPos("H_MIN", trackbarWindowName, this->getHSVmin().val[0]);
+  setTrackbarPos("H_MAX", trackbarWindowName, this->getHSVmax().val[0]);
+  setTrackbarPos("S_MIN", trackbarWindowName, this->getHSVmin().val[1]);
+  setTrackbarPos("S_MAX", trackbarWindowName, this->getHSVmax().val[1]);
+  setTrackbarPos("V_MIN", trackbarWindowName, this->getHSVmin().val[2]);
+  setTrackbarPos("V_MAX", trackbarWindowName, this->getHSVmax().val[2]);
 
   // Wait forever until user sets the values
-   while (1) {
-      //store image to matrix
-      capture.read(cameraFeed);
-      undistortImage(cameraFeed);
+  while (1) {
+    // store image to matrix
+    capture.read(cameraFeed);
+    // undistortImage(cameraFeed);
 
-      //convert frame from BGR to HSV colorspace
-      field_origin_x = field_center_x - (field_width/2);
-      field_origin_y = field_center_y - (field_height/2);
-      Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
-      cameraFeed = cameraFeed(myROI);
-      cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
+    // convert frame from BGR to HSV colorspace
+    field_origin_x = field_center_x - (field_width/2);
+    field_origin_y = field_center_y - (field_height/2);
+    Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
+    cameraFeed = cameraFeed(myROI);
+    cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-      //if in calibration mode, we track objects based on the HSV slider values.
-      inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+    // if in calibration mode, we track objects based on the HSV slider values.
+    inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 
-      // Erode, then dialate to get a cleaner image
-      morphOps(threshold);
+    // Erode, then dialate to get a cleaner image
+    morphOps(threshold);
 
-      h_min = getTrackbarPos( "H_MIN", trackbarWindowName);
-      h_max = getTrackbarPos( "H_MAX", trackbarWindowName);
-      s_min = getTrackbarPos( "S_MIN", trackbarWindowName);
-      s_max = getTrackbarPos( "S_MAX", trackbarWindowName);
-      v_min = getTrackbarPos( "V_MIN", trackbarWindowName);
-      v_max = getTrackbarPos( "V_MAX", trackbarWindowName);
+    h_min = getTrackbarPos("H_MIN", trackbarWindowName);
+    h_max = getTrackbarPos("H_MAX", trackbarWindowName);
+    s_min = getTrackbarPos("S_MIN", trackbarWindowName);
+    s_max = getTrackbarPos("S_MAX", trackbarWindowName);
+    v_min = getTrackbarPos("V_MIN", trackbarWindowName);
+    v_max = getTrackbarPos("V_MAX", trackbarWindowName);
 
+    Scalar hsv_min(h_min, s_min, v_min);
+    Scalar hsv_max(h_max, s_max, v_max);
+
+    setHSVmin(hsv_min);
+    setHSVmax(hsv_max);
+
+    trackFilteredRobot(threshold,HSV,cameraFeed);
+
+    imshow(windowName2,threshold);
+    imshow(windowName,cameraFeed);
+
+    char pressedKey;
+    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    if (pressedKey == '\n') {
       Scalar hsv_min(h_min, s_min, v_min);
       Scalar hsv_max(h_max, s_max, v_max);
 
       setHSVmin(hsv_min);
       setHSVmax(hsv_max);
 
-      trackFilteredRobot(threshold,HSV,cameraFeed);
+      printf("\n\nRobot HSV Values Saved!\n");
+      printf("h_min: %d\n", h_min);
+      printf("h_max: %d\n", h_max);
+      printf("s_min: %d\n", s_min);
+      printf("s_max: %d\n", s_max);
+      printf("v_min: %d\n", v_min);
+      printf("v_max: %d\n", v_max);
 
-      imshow(windowName2,threshold);
-      imshow(windowName,cameraFeed);
+      destroyAllWindows();
 
-      char pressedKey;
-      pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
-      if (pressedKey == '\n') {
+      // Reset Globals
+      H_MIN = 0;
+      H_MAX = 256;
+      S_MIN = 0;
+      S_MAX = 256;
+      V_MIN = 0;
+      V_MAX = 256;
 
-          Scalar hsv_min(h_min, s_min, v_min);
-          Scalar hsv_max(h_max, s_max, v_max);
-
-          setHSVmin(hsv_min);
-          setHSVmax(hsv_max);
-
-          printf("\n\nRobot HSV Values Saved!\n");
-          printf("h_min: %d\n", h_min);
-          printf("h_max: %d\n", h_max);
-          printf("s_min: %d\n", s_min);
-          printf("s_max: %d\n", s_max);
-          printf("v_min: %d\n", v_min);
-          printf("v_max: %d\n", v_max);
-
-          destroyAllWindows();
-
-          // Reset Globals
-          H_MIN = 0;
-          H_MAX = 256;
-          S_MIN = 0;
-          S_MAX = 256;
-          V_MIN = 0;
-          V_MAX = 256;
-
-          return;
-      }
+      return;
+    }
    }
 }
 
@@ -150,25 +149,26 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
   threshold.copyTo(temp);
   morphOps(temp);
 
-  int c1 = 0, c2=1;   // c1 = Center Point of Big Circle and c2 = Center Point of Small Circle
+  // c1 = Center Point of Big Circle
+  // c2 = Center Point of Small Circle
+  int c1 = 0, c2 = 1;
 
-  //these two vectors needed for output of findContours
+  // these two vectors needed for output of findContours
   vector< vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
-  //find contours of filtered image using openCV findContours function
+  // find contours of filtered image using openCV findContours function
   findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE );
 
-  //use moments method to find our filtered object
-  //TODO(lukehsiao) This WILL break if there are more than 2 objects found. Segmentation has to be really good.
+  // use moments method to find our filtered object
+  // TODO -- This WILL break if there are more than 2 objects found. Segmentation has to be really good.
   if (contours.size() == 2) {
 
     // Identify the bigger object
     if (contourArea(contours[0]) < contourArea(contours[1])) {
       c1 = 1;
       c2 = 0;
-    }
-    else {
+    } else {
       c1 = 0;
       c2 = 1;
     }
@@ -208,8 +208,7 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
 //    // Correct angle to the Robot's X-axis
 //    if (intAngle > 90) {
 //      intAngle = intAngle - 90;
-//    }
-//    else {
+//    } else {
 //      intAngle = 270 + intAngle;
 //    }
 
@@ -230,33 +229,36 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
       }
+
       if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
       }
+
       if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
       }
-    }
-    else {
+    } else {
       // Convert to Away Angle
       if (intAngle <= 180) {
         intAngle = 180 + intAngle;
-      }
-      else {
+      } else {
         intAngle = intAngle - 180;
       }
+
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
       }
+
       if (abs(fieldPosition.x + this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x + this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(-fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
       }
+
       if (abs(fieldPosition.y + this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y + this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(-fieldPosition.y);

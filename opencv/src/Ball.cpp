@@ -48,7 +48,7 @@ void Ball::calibrateBall(VideoCapture capture) {
    while (1) {
     //store image to matrix
     capture.read(cameraFeed);
-    undistortImage(cameraFeed);
+    // undistortImage(cameraFeed);
 
     //convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
