@@ -3,6 +3,6 @@ prefix=/home/odroid/ecen490/catkin_odroid_ws/devel
 Name: subscriber
 Description: Description of subscriber
 Version: 0.0.0
-Cflags: 
+Cflags: -I/home/odroid/ecen490/catkin_odroid_ws/devel/include
 Libs: -L/home/odroid/ecen490/catkin_odroid_ws/devel/lib 
 Requires: 
