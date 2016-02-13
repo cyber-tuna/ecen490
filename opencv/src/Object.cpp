@@ -1,9 +1,7 @@
-/*
- * Object.cpp
- *
- *  Created on: Jan 30, 2015
- *      Author: lukehsiao
- */
+//============================================================================
+// Name : Object.cpp
+// Description : Implementation of Object methods.
+//============================================================================
 
 #include "Object.h"
 
@@ -20,9 +18,7 @@ Object::Object() {
   Object::HSVmin = 0;
 }
 
-Object::~Object() {
-  // TODO Auto-generated destructor stub
-}
+Object::~Object() {}
 
 // Setters and Getters
 void Object::set_x_pos(int x) {

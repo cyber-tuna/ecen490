@@ -1,9 +1,8 @@
-/*
- * ComputerVision.h
- *
- *  Created on: Mar 14, 2015
- *      Author: ecestudent
- */
+//============================================================================
+// Name : ComputerVision.h
+// Description : Declares structs and allows some variables to be
+//               accessed externally.
+//============================================================================
 
 #ifndef COMPUTERVISION_H_
 #define COMPUTERVISION_H_
@@ -99,7 +98,6 @@ extern const std::string trackbarWindowName;
 // Camera Calibration Data
 extern double dist_coeff[5][1];
 extern double cam_matrix[3][3];
-
 
 // Shared Utility Functions
 void createHSVTrackbars();

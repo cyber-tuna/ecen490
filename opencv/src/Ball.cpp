@@ -1,9 +1,6 @@
 //============================================================================
 // Name : Ball.cpp
-// Author : Luke Hsiao, Clover Wu
-// Version :
-// Copyright : Copyright 2015 Team Vektor Krum
-// Description : Implementation of Ball methods
+// Description : Implementation of Ball methods.
 //============================================================================
 
 #include "Ball.h"
@@ -15,9 +12,7 @@ Ball::Ball() : Object() {
   setHSVmax(cv::Scalar(45,186,238));
 }
 
-Ball::~Ball() {
-	// TODO Auto-generated destructor stub
-}
+Ball::~Ball() {}
 
 // Generates prompts for calibration of the color ball
 void Ball::calibrateBall(VideoCapture capture) {

@@ -1,22 +1,19 @@
-/*
- * Object.h
- *
- *  Created on: Jan 30, 2015
- *      Author: lukehsiao
- */
+//============================================================================
+// Name : Object.h
+// Description : Outlines the Object object.
+//============================================================================
 
 #ifndef OBJECT_H_
 #define OBJECT_H_
 
 #include "ComputerVision.h"
 
-
 class Object {
   public:
     Object();
     virtual ~Object();
 
-    // Setters and Getters
+    // Getters and Setters
     void set_x_pos(int x);
     int get_x_pos();
 
@@ -38,8 +35,6 @@ class Object {
     cv::Scalar getHSVmax();
     void setHSVmax(cv::Scalar max);
 
-
-
   protected:
     int x_pos, y_pos;
     int img_x, img_y;
@@ -48,7 +43,6 @@ class Object {
     int old_x_pos, old_y_pos;
 
     cv::Scalar HSVmin, HSVmax;
-
 };
 
 #endif /* OBJECT_H_ */

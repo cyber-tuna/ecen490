@@ -1,21 +1,25 @@
 //============================================================================
 // Name : ComputerVision.cpp
-// Author : Luke Hsiao, Clover Wu
-// Version :
-// Copyright : Copyright 2015 Team Vektor Krum
-// Description : This program receives video data from the Soccer Field's
-// overhead camera, processes the images, and outputs
-// the (x,y) positions of all 4 robots, the ball, and all
-// robot's orientations.
+// Author : Jared Ririe
+// Source: Some portions of this file are adapted from VektorKrum's vision code
+// Description : Receives video data from the soccer field's
+//               overhead camera, processes the images, and outputs
+//               the (x,y) positions of all 4 robots, the ball, and all
+//               robot's orientations.
 //============================================================================
-
 
 #include "ComputerVision.h"
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
 
+#include <unistd.h>
+
 using namespace cv;
+
+//-----------------------------------------------------------------------------
+// Global variables and constants
+//-----------------------------------------------------------------------------
 
 // Change this parameter to determine which team we are on!
 // Either set it to HOME or AWAY
@@ -27,8 +31,8 @@ int field_height;
 int field_center_x;
 int field_center_y;
 
-//initial min and max HSV filter values.
-//these will be changed using trackbars
+// initial min and max HSV filter values
+// these will be changed using trackbars
 int H_MIN = 0;
 int H_MAX = 256;
 int S_MIN = 0;
@@ -36,7 +40,7 @@ int S_MAX = 256;
 int V_MIN = 0;
 int V_MAX = 256;
 
-//min and max field variable values
+// min and max field variable values
 int field_height_min = 0;
 int field_width_min = 0;
 int field_center_x_min = 0;
@@ -46,14 +50,14 @@ int field_width_max = FRAME_WIDTH + 300;
 int field_center_x_max = FRAME_WIDTH;
 int field_center_y_max = FRAME_HEIGHT;
 
-//max number of objects to be detected in frame
+// max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS = 50;
 
-//minimum and maximum object area
+// minimum and maximum object area
 const int MIN_OBJECT_AREA = 7*7;
 const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 
-//names that will appear at the top of each window
+// names that will appear at the top of each window
 const string windowName = "Original Image";
 const string windowName1 = "HSV Image";
 const string windowName2 = "Thresholded Image";
@@ -85,6 +89,11 @@ sem_t frameRawSema;
 std::queue<FrameRaw> frameRawFifo;
 sem_t frameMatSema;
 std::queue<FrameMat> frameMatFifo;
+FrameMat frameMat;
+
+//-----------------------------------------------------------------------------
+// Save/restore Settings
+//-----------------------------------------------------------------------------
 
 // Saves all of the pertinent calibration settings to human-readable file
 void saveSettings() {
@@ -92,7 +101,7 @@ void saveSettings() {
   std::ofstream of("settings.data");
 
   if (!of.is_open()) {
-    printf("\n\n\nERROR OPENING SETTINGS FILE!\n\n\n");
+    printf("error: could not save settings file\n");
     return;
   }
 
@@ -192,7 +201,7 @@ void restoreSettings() {
   std::stringstream ss;
   std::ifstream in("settings.data");
   if (!in.good()) {
-    printf("\n\n\nERROR, Couldn't open file\n\n\n");
+    printf("error: could not restore settings file\n");
     return;
   }
 
@@ -203,10 +212,12 @@ void restoreSettings() {
   // Parse File line by line
   while(getline(in, line)) {
     if (line.c_str()[0] == '#') {
-      continue; //skip comments
+      continue; // skip comments
     }
+
     ss.str(line);
     ss >> ID;
+
     if (ID == h1) {
       ss >> tempH;
       ss >> tempS;
@@ -216,8 +227,7 @@ void restoreSettings() {
       ss >> tempS;
       ss >> tempV;
       home1.setHSVmax(Scalar(tempH, tempS, tempV));
-    }
-    else if (ID == h2) {
+    } else if (ID == h2) {
       ss >> tempH;
       ss >> tempS;
       ss >> tempV;
@@ -226,8 +236,7 @@ void restoreSettings() {
       ss >> tempS;
       ss >> tempV;
       home2.setHSVmax(Scalar(tempH, tempS, tempV));
-    }
-    else if (ID == a1) {
+    } else if (ID == a1) {
       ss >> tempH;
       ss >> tempS;
       ss >> tempV;
@@ -236,8 +245,7 @@ void restoreSettings() {
       ss >> tempS;
       ss >> tempV;
       away1.setHSVmax(Scalar(tempH, tempS, tempV));
-    }
-    else if (ID == a2) {
+    } else if (ID == a2) {
       ss >> tempH;
       ss >> tempS;
       ss >> tempV;
@@ -246,8 +254,7 @@ void restoreSettings() {
       ss >> tempS;
       ss >> tempV;
       away2.setHSVmax(Scalar(tempH, tempS, tempV));
-    }
-    else if (ID == b) {
+    } else if (ID == b) {
       ss >> tempH;
       ss >> tempS;
       ss >> tempV;
@@ -256,27 +263,26 @@ void restoreSettings() {
       ss >> tempS;
       ss >> tempV;
       ball.setHSVmax(Scalar(tempH, tempS, tempV));
-    }
-    else if (ID == f) {
+    } else if (ID == f) {
       ss >> field_center_x;
       ss >> field_center_y;
       ss >> field_width;
       ss >> field_height;
     }
+
     ss.clear();
   }
+
   in.close();
   printf("Settings Restored!\n");
 }
 
 //-----------------------------------------------------------------------------
-// Utility Functions Shared by Classes =======================================
+// Utility Functions Shared by Classes
 //-----------------------------------------------------------------------------
 
 // This function is called whenever a trackbar changes
-void on_trackbar( int, void* ) {
-  // Does nothing
-}
+void on_trackbar(int, void*) {}
 
 string intToString(int number) {
   std::stringstream ss;
@@ -312,7 +318,6 @@ void undistortImage(Mat &source) {
   remap(temp, source, map1, map2, INTER_LINEAR);
 }
 
-
 void createHSVTrackbars() {
 	//create window for trackbars
 	namedWindow(trackbarWindowName,0);
@@ -329,7 +334,7 @@ void createHSVTrackbars() {
 	createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
 }
 
-//Converts from image coordinates to field coordinates
+// Converts from image coordinates to field coordinates
 Point convertCoordinates(Point imageCoordinates) {
   int img_x = imageCoordinates.x;
   int img_y = imageCoordinates.y;
@@ -369,7 +374,7 @@ void morphOps(Mat &thresh) {
 }
 
 //-----------------------------------------------------------------------------
-//  End of Utility Functions Shared by Classes ===============================
+//  Calibration functions
 //-----------------------------------------------------------------------------
 
 // Generates prompts for field calibration of size/center
@@ -378,17 +383,17 @@ void calibrateField(VideoCapture capture) {
   int field_origin_x;
   int field_origin_y;
 
-  //create window for trackbars
+  // create window for trackbars
   namedWindow(trackbarWindowName,0);
 
-  //create trackbars and insert them into window
-  //3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
-  //the max value the trackbar can move (eg. H_HIGH),
-  //and the function that is called whenever the trackbar is moved(eg. on_trackbar)
-  createTrackbar("Field Center Y", trackbarWindowName, &field_center_y_min, field_center_y_max, on_trackbar );
-  createTrackbar("Field Center X", trackbarWindowName, &field_center_x_min, field_center_x_max, on_trackbar );
-  createTrackbar("Field Height", trackbarWindowName, &field_height_min, field_height_max, on_trackbar );
-  createTrackbar("Field Width", trackbarWindowName, &field_width_min, field_width_max, on_trackbar );
+  // create trackbars and insert them into window
+  // 3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
+  // the max value the trackbar can move (eg. H_HIGH),
+  // and the function that is called whenever the trackbar is moved(eg. on_trackbar)
+  createTrackbar("Field Center Y", trackbarWindowName, &field_center_y_min, field_center_y_max, on_trackbar);
+  createTrackbar("Field Center X", trackbarWindowName, &field_center_x_min, field_center_x_max, on_trackbar);
+  createTrackbar("Field Height", trackbarWindowName, &field_height_min, field_height_max, on_trackbar);
+  createTrackbar("Field Width", trackbarWindowName, &field_width_min, field_width_max, on_trackbar);
 
   // Set Trackbar Initial Positions
   setTrackbarPos("Field Center Y", trackbarWindowName, field_center_y);
@@ -399,6 +404,7 @@ void calibrateField(VideoCapture capture) {
   // Wait forever until user sets the values
   while (1) {
     capture.read(cameraFeed);
+
     //undistortImage(cameraFeed);
 
     // Wait for user to set values
@@ -425,14 +431,14 @@ void calibrateField(VideoCapture capture) {
     imshow(windowName,cameraFeed);
 
     char pressedKey;
-    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    pressedKey = waitKey(5); // Wait for user to press 'Enter'
     if (pressedKey == '\n') {
       field_center_y = getTrackbarPos("Field Center Y", trackbarWindowName);
       field_center_x = getTrackbarPos("Field Center X", trackbarWindowName);
       field_height = getTrackbarPos("Field Height", trackbarWindowName);
       field_width = getTrackbarPos("Field Width", trackbarWindowName);
 
-      printf("\n\nField Values Saved!\n");
+      printf("\nField Values Saved!\n");
       printf("Field Center Y: %d\n", field_center_y);
       printf("Field Center X: %d\n", field_center_x);
       printf("Field Width: %d\n", field_width);
@@ -455,131 +461,64 @@ void runFullCalibration(VideoCapture capture) {
   saveSettings();
 }
 
-// Special function for both getting the next image and reading the timestamp
-// from the IP camera. Currently NOT very optimized for performance.
-Time getNextImage(std::ifstream & myFile, std::vector<char> & imageArray) {
-  imageArray.clear();
-  imageArray.reserve(1024*64);
-  char buffer[4];
-  Time timestamp;
-  bool foundImage = false;
-  while(!foundImage){
-    myFile.read(buffer,1);
-    if((*buffer) == (char)0xFF){
-      myFile.read(buffer,1);
-      if((*buffer) == (char)0xD8){
-        //printf("found start of image \n");
-        imageArray.push_back((char)0xFF);
-        imageArray.push_back((char)0xD8);
-        while(1){
-          myFile.read(buffer,1);
-          imageArray.push_back(*buffer);
-          if((*buffer) == (char)0xFF){
-            myFile.read(buffer,1);
-            imageArray.push_back(*buffer);
-            if((*buffer) == (char)0xFE){
-              myFile.read(buffer,4);
-              imageArray.push_back(*buffer);
-              imageArray.push_back(*(buffer+1));
-              imageArray.push_back(*(buffer+2));
-              imageArray.push_back(*(buffer+3));
-              if((*(buffer+3)) == (char)0x01) {
-                myFile.read(buffer,4);
-                unsigned int sec = 0;
-                for(int i = 0; i < 4; i++){
-                  imageArray.push_back(*(buffer + i));
-                  sec <<= 8;
-                  sec += *(unsigned char*)(void*)(buffer+i);
-                }
+//-----------------------------------------------------------------------------
+//  Threads
+//-----------------------------------------------------------------------------
 
-                myFile.read(buffer,1);
-                unsigned int hundreds = 0;
-                imageArray.push_back(*buffer);
-                hundreds += *(unsigned char*)(void*)buffer;
-                timestamp.sec = sec;
-                timestamp.nsec = hundreds * 10000000;
-              }
+// This thread converts JPEGs into Mats and undistorts them.
+void *processorThread(void *notUsed) {
+  printf("processorThread\n");
 
-
-            }else if((*buffer) == (char)0xD9){
-              //printf("found end of image\n");
-              foundImage = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-  return timestamp;
-}
-
-// This thread loads the streaming video into memory to be loaded into
-// OpenCV. The semaphore is a simple counting semaphore
-void * parserThread(void * notUsed){
-  system("curl -s http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg > imagefifo &");
-  std::ifstream myFile ("imagefifo",std::ifstream::binary);
-  std::vector<char> imageArray;
-  FrameRaw frame;
-  do {
-    frame.timestamp = getNextImage(myFile, imageArray);
-    frame.image = imageArray;
-    int value;
-    sem_getvalue(&frameRawSema, &value);
-    if (value < MIN_BUFFER_SIZE){
-      frameRawFifo.push(frame);
-      sem_post(&frameRawSema);
-    }
-    else {
-      printf("frame dropped (Capture): %u.%09u\n",frame.timestamp.sec,frame.timestamp.nsec);
-    }
-  } while (1);
-  return NULL;
-}
-
-//This thread converts JPEGs into Mats and undistorts them.
-void * processorThread(void * notUsed){
   FrameRaw frameRaw;
-  FrameMat frameMat;
-  while(1){
-    sem_wait(&frameRawSema);
-    frameRaw = frameRawFifo.front();
-    frameRawFifo.pop();
+  // FrameMat frameMat;
 
-    int value;
-    sem_getvalue(&frameMatSema, &value);
-    if (value < MIN_BUFFER_SIZE){
-      frameMat.timestamp = frameRaw.timestamp;
-      frameMat.image = imdecode(frameRaw.image, CV_LOAD_IMAGE_COLOR);
+  const string videoStreamAddress = "http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg";
+  VideoCapture capture;
+  capture.open(videoStreamAddress);
+
+  while(true) {
+    //sem_wait(&frameRawSema);
+    //frameRaw = frameRawFifo.front();
+    //frameRawFifo.pop();
+
+    // int value;
+    // sem_getvalue(&frameMatSema, &value);
+    // if (value < MIN_BUFFER_SIZE) {
+      frameMat.timestamp = Time();
+      capture.read(frameMat.image);
 
       //undistortImage(frameMat.image);
-      frameMatFifo.push(frameMat);
+      // frameMatFifo.push(frameMat);
+
       sem_post(&frameMatSema);
-    }
-    else {
-      printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
-    }
+    // } else {
+      // printf("frame dropped (Process): %u.%09u\n",frameRaw.timestamp.sec,frameRaw.timestamp.nsec);
+    // }
   }
   return NULL;
 }
 
+//-----------------------------------------------------------------------------
+//  Main
+//-----------------------------------------------------------------------------
+
 int main(int argc, char* argv[]) {
-	//if we would like to calibrate our filter values, set to true.
+	// if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
 
   int field_origin_x;
   int field_origin_y;
 
-	//Matrix to store each frame of the webcam feed
+	// Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
-	Mat threshold1; //threshold image of ball
-	Mat threshold2; //threshold image of robot
-	Mat threshold; //combined image
+	Mat threshold1; // threshold image of ball
+	Mat threshold2; // threshold image of robot
+	Mat threshold; // combined image
 	Mat HSV;
 	Mat bw; // black and white mat
-  Mat BGR;// BGR mat
+  Mat BGR; // BGR mat
 
-	//video capture object to acquire webcam feed
+	// video capture object to acquire webcam feed
   const string videoStreamAddress = "http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg";
 	VideoCapture capture;
   capture.open(videoStreamAddress); //set to 0 to use the webcam
@@ -589,34 +528,43 @@ int main(int argc, char* argv[]) {
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
   if (calibrationMode == true) {
-    // Calibrate the camera first
     runFullCalibration(capture);
   }
+
+  printf("Done Calibrating\n");
 
 	//all of our operations will be performed within this loop
   capture.release();
 
+  printf("Released\n");
+
   //namedWindow(windowName,WINDOW_NORMAL);
 
-  // ************************************************************************
-  //start forked process and threads that:
+  //-----------------------------------------------------------------------------
+  // start forked process and threads that:
   //  1) read stream into a ifstream
   //  2) parses stream into memory buffer and decodes it into openCV mat
   //  3) processes mat
-  pthread_t parser;
+  //-----------------------------------------------------------------------------
+
+  // pthread_t parser;
   pthread_t processor;
   sem_init(&frameRawSema,0,0);
   sem_init(&frameMatSema,0,0);
-  pthread_create (&parser, NULL, parserThread, NULL);
+  // pthread_create (&parser, NULL, parserThread, NULL);
   pthread_create (&processor, NULL, processorThread, NULL);
   // ************************************************************************
 
+  printf("Pthreads created\n");
+
   while(1) {
     sem_wait(&frameMatSema);
-    FrameMat frame = frameMatFifo.front();
-    frameMatFifo.pop();
-    //store image to matrix
-	  //Time timestamp = frame.timestamp;
+    FrameMat frame = frameMat;
+    // FrameMat frame = frameMatFifo.front();
+    // frameMatFifo.pop();
+
+    // store image to matrix
+	  // Time timestamp = frame.timestamp;
 	  cameraFeed = frame.image;
 
     //convert frame from BGR to HSV colorspace
@@ -627,21 +575,22 @@ int main(int argc, char* argv[]) {
 
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-    // Track Ball
-    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-    ball.trackFilteredBall(threshold,HSV,cameraFeed);
+    // // Track Ball
+    // inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
+    // ball.trackFilteredBall(threshold,HSV,cameraFeed);
 
     // Track Home 1
     inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
     home1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
-    // Track Away 1
-    inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
-    away1.trackFilteredRobot(threshold,HSV,cameraFeed);
+    // // Track Away 1
+    // inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+    // away1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
     rectangle(cameraFeed,fieldOutline,Scalar(255,255,255), 1, 8 ,0);
+
     // Draw centering lines
     Point top_mid(field_width/2, 0);
     Point bot_mid(field_width/2, field_height);
@@ -655,7 +604,7 @@ int main(int argc, char* argv[]) {
 
     // Wait to check if user wants to switch Home/Away
     char pressedKey;
-    pressedKey = cvWaitKey(5); // Wait for user to press 'Enter'
+    pressedKey = waitKey(1); // Wait for user to press 'Enter'
     if (pressedKey == 'a') {
       TEAM = AWAY;
     }

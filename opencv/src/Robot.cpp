@@ -1,9 +1,6 @@
 //============================================================================
 // Name : Robot.cpp
-// Author : Luke Hsiao, Clover Wu
-// Version :
-// Copyright : Copyright 2015 Team Vektor Krum
-// Description : Implementation of Robot methods
+// Description : Implementation of Robot methods.
 //============================================================================
 
 #include "Robot.h"
@@ -14,6 +11,7 @@ Robot::Robot(int TEAM) : Object() {
   Robot::team = TEAM;
   Robot::angle = 0;
   Robot::old_angle = 0;
+
   // Hard code team colors here
   if (team == HOME) {
     setHSVmin(cv::Scalar(0,0,235));
@@ -25,9 +23,7 @@ Robot::Robot(int TEAM) : Object() {
   }
 }
 
-Robot::~Robot() {
-	// TODO Auto-generated destructor stub
-}
+Robot::~Robot() {}
 
 // Draws human-readable markers on the image showing robot information
 void Robot::drawRobot(Mat &frame) {
@@ -77,6 +73,7 @@ void Robot::calibrateRobot(VideoCapture capture) {
   while (1) {
     // store image to matrix
     capture.read(cameraFeed);
+
     // undistortImage(cameraFeed);
 
     // convert frame from BGR to HSV colorspace

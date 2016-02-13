@@ -1,8 +1,5 @@
 //============================================================================
 // Name : Ball.h
-// Author : Luke Hsiao, Clover Wu
-// Version :
-// Copyright : Copyright 2015 Team Vektor Krum
 // Description : Outlines the Ball object.
 //============================================================================
 
