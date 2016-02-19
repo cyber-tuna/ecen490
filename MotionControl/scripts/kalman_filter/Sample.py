@@ -1,5 +1,8 @@
 import math
-from param import *
+import sys
+sys.path.append('/home/odroid/ecen490/')
+# from param import *
+from MotionControl.scripts.param import *
 
 class Sample:
     def __init__(self):
@@ -19,7 +22,7 @@ class Sample:
         self.ball_x = 0.0
         self.ball_y = 0.0
         self.kill = 0.0
-        
+
     def setDataFromSample(self,data):
         self.time = round(timeToInt(data.header.stamp),2)
         self.home1_theta = round(degreeToRadian(data.home1_theta),3)
@@ -30,7 +33,7 @@ class Sample:
         angleCamera = math.atan(HEIGHT_CAMERA/mag)
         offset = HEIGHT_ROBOT / math.tan(angleCamera)
         home1_x = home1_x - offset * math.cos(angleField)
-        home1_y = home1_y - offset * math.sin(angleField)       
+        home1_y = home1_y - offset * math.sin(angleField)
         self.home1_x = round(home1_x,3)
         self.home1_y = round(home1_y,3)
         self.home2_x = pixelToMeter(data.home2_x)
@@ -43,8 +46,8 @@ class Sample:
         self.away2_y = pixelToMeter(data.away2_y)
         self.away2_theta = degreeToRadian(data.away2_theta)
         self.ball_x = pixelToMeter(data.ball_x)
-        self.ball_y = pixelToMeter(data.ball_y)      
-        
+        self.ball_y = pixelToMeter(data.ball_y)
+
     def getDiscreteSample(self):
         home1_x = meterToPixel(self.home1_x);
         home1_y = meterToPixel(self.home1_y);
@@ -60,10 +63,9 @@ class Sample:
         away2_theta = radianToDegree(self.away2_theta);
         ball_x = meterToPixel(self.ball_x);
         ball_y = meterToPixel(self.ball_y);
-        
+
         return (home1_x, home1_y, home1_theta,
         home2_x, home2_y, home2_theta,
         away1_x, away1_y, away1_theta,
         away2_x, away2_x, away2_theta,
         ball_x, ball_y)
-        
