@@ -1,2 +1,4 @@
 *~
 opencv/output
+opencv/imagefifo
+*.pyc
