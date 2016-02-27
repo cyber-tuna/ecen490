@@ -15,20 +15,20 @@ class Command:
         self.runTime = runTime
         self.start = 0.0
         self.stop = 0.0
-    
+
     def setCommand(self, timestamp, vel_x, vel_y, omega):
         self.start = timestamp
         self.vel_x = vel_x
         self.vel_y = vel_y
-        self.omega = omega 
-    
+        self.omega = omega
+
     def getCommandToSend(self):
         return self.start, self.vel_x, self.vel_y, self.omega
-    
+
     def run(self):
         self.start = round(time.time(),2)
         velchange.goXYOmegaTheta(self.vel_x, self.vel_y, self.omega, self.theta)
-    
+
     def launch(self):
         self.start = round(time.time(),2)
         self.stop = round(self.start+self.runTime,2)
@@ -36,11 +36,11 @@ class Command:
         while(time.time() < self.stop):
             pass
         velchange.goXYOmega(0,0,0)
-        
+
 class MotionSkills:
     def __init__(self):
         pass
-        
+
     @staticmethod
     def go_to_point(currentRobotState, desiredPoint, percentage = 0):
         length = math.sqrt((desiredPoint.x-currentRobotState.pos_x_est)**2+(desiredPoint.y-currentRobotState.pos_y_est)**2)
@@ -51,17 +51,17 @@ class MotionSkills:
         vel_x = math.cos(angle)*SPEED_ROBOT
         vel_y = math.sin(angle)*SPEED_ROBOT
         return Command(vel_x, vel_y, 0, currentRobotState.pos_theta_est, runTime)
-    
+
     @staticmethod
     def disBetweenPoints(point1,point2):
       return math.sqrt((point2.y-point1.y)**2+(point2.x-point1.x)**2)
 
-    @staticmethod    
+    @staticmethod
     def angleBetweenPoints(firstPoint,secondPoint):
         angle = math.atan2(secondPoint.y-firstPoint.y,secondPoint.x-firstPoint.x)
         # print "desired angle: %f" % radianToDegree(angle)
         return angle
-        
+
     @staticmethod
     def deltaBetweenAngles(first,second):
         delta_angle = second - first
@@ -71,34 +71,35 @@ class MotionSkills:
         #    delta_angle = delta_angle - (math.pi * 2)
         # print "delta: %f" % radianToDegree(delta_angle)
         return math.atan2(math.sin(delta_angle), math.cos(delta_angle))
-    
+
     @staticmethod
     def go_to_angle(currentRobotState, lookToPoint):
         currentAngle = currentRobotState.pos_theta_est
-        # print "current angle: %f" % currentAngle
+        print "current angle", currentAngle
         point = Point(currentRobotState.pos_x_est,currentRobotState.pos_y_est)
         desiredAngle = MotionSkills.angleBetweenPoints(point, lookToPoint)
+        print "desired angle", desiredAngle
         delta =  MotionSkills.deltaBetweenAngles(currentAngle, desiredAngle)
         runTime = abs(delta/SPEED_ROTATION)
-    
+
         speed = SPEED_ROTATION
-    
+
         if delta < 0:
             speed = -speed
 
         return Command(0, 0, speed, 0, runTime)
-    
+
     @staticmethod
-    def getPointBehindBall(ball, home_goal = None):
+    def getPointBehindBall(ballPoint, home_goal = None):
         if home_goal == None:
           home_goal = HOME_GOAL
-        ballPoint = ball.point
+        #ballPoint = ball.point
         angle = MotionSkills.angleBetweenPoints(home_goal, ballPoint)
         x = ballPoint.x + (DIS_BEHIND_BALL * math.cos(angle))
         y = ballPoint.y + (DIS_BEHIND_BALL * math.sin(angle))
-        #print "(%f, %f)" % (x, y)
+        # print "getPointBehindBall::(%f, %f)" % (x, y)
         return Point(x,y)
-        
+
     @staticmethod
     def rotatePointByAngle(point,angle):
         R = matrix([[math.cos(angle),math.sin(angle)],
@@ -113,11 +114,11 @@ class MotionSkills:
     def isPointInFrontOfRobot(robotLoc,point,param_x = .5, param_y = .04):
         refPoint = Point(point.x-robotLoc.x,point.y - robotLoc.y)
         rotatedPoint = MotionSkills.rotatePointByAngle(refPoint, robotLoc.theta)
-        
+
         if rotatedPoint.x > 0 and rotatedPoint.x < param_x and rotatedPoint.y < param_y and rotatedPoint.y > -param_y:
             return True
         return False
-        
+
     @staticmethod
     # This method finds the point "distFromBall" away from the ball perpendicular to the line from the ball to the goal
     def getPointBesideBall(robotLoc, ball, distFromBall):
@@ -134,22 +135,22 @@ class MotionSkills:
         beside_y = ball.y + (distFromBall * math.sin(angleToDesiredPoint))
       pointBesideBall = Point(beside_x, beside_y)
       return pointBesideBall
-        
+
     @staticmethod
     def isBallBehindRobot(robotLoc, ball):
       distRobot_x = (HOME_GOAL.x - robotLoc.x)
       distRobot_y = (HOME_GOAL.y - robotLoc.y)
       distRobotToGoal = math.sqrt(distRobot_x**2+distRobot_y**2)
-      
+
       distBall_x = (HOME_GOAL.x - robotLoc.x)
       distBall_y = (HOME_GOAL.y - robotLoc.y)
       distBallToGoal = math.sqrt(distBall_x**2+distBall_y**2)
-      
+
       if distRobotToGoal < distBallToGoal:
         return True
       else:
         return False
-    
+
     @staticmethod
     #behind_x is the allowed distance behind the ball the robot can go while still rushing the ball
     def isBallInFrontOfRobot(robotState,ball,param_x = .5, param_y = .04, behind_x = 0):
@@ -170,9 +171,9 @@ class MotionSkills:
         if angleDiff > math.pi:
             angleDiff = (2*math.pi - angleDiff)
         #print 'angle difference: %d' %((angleDiff/math.pi)*180)
-        
+
         if rotatedPoint.x > 0 and rotatedPoint.x < param_x and rotatedPoint.y < param_y and rotatedPoint.y > -param_y:
-            
+
             #print "Behind Ball!"
             if angleDiff < 0.15:
                 #print "Angled toward Goal"
@@ -181,7 +182,3 @@ class MotionSkills:
             return False
         print "Not Behind Ball!"
         return False
-        
-        
-
-    

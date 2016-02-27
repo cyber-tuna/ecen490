@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/home/odroid/ecen490/')
 from MotionSkills import *
 
 class BallLocation(self):
@@ -7,7 +9,7 @@ class BallLocation(self):
     self.y = y
     self.magnitude = magnitude
     self.angle = angle
-    
+
 
 class Ball:
     def __init__(self):
