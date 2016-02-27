@@ -12,6 +12,7 @@
 #include "Ball.h"
 #include "Robot.h"
 #include "Object.h"
+#include "zhelpers.hpp"
 
 #include <unistd.h>
 
@@ -453,7 +454,7 @@ void calibrateField(VideoCapture capture) {
 void runFullCalibration(VideoCapture capture) {
   restoreSettings();
   calibrateField(capture);
-  //ball.calibrateBall(capture);
+  ball.calibrateBall(capture);
   home1.calibrateRobot(capture);
   //Home2.calibrateRobot(capture);
   //away1.calibrateRobot(capture);
@@ -472,7 +473,7 @@ void *processorThread(void *notUsed) {
   FrameRaw frameRaw;
   // FrameMat frameMat;
 
-  const string videoStreamAddress = "http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg";
+  const string videoStreamAddress = "http://192.168.1.78:8080/stream?topic=/image&dummy=param.mjpg";
   VideoCapture capture;
   capture.open(videoStreamAddress);
 
@@ -503,6 +504,19 @@ void *processorThread(void *notUsed) {
 //-----------------------------------------------------------------------------
 
 int main(int argc, char* argv[]) {
+  //  Prepare our context and publisher
+  zmq::context_t context(1);
+  zmq::socket_t publisher(context, ZMQ_PUB);
+  publisher.bind("tcp://*:5563");
+
+  // while (1) {
+  //     //  Write two messages, each with an envelope and content
+  //     s_sendmore (publisher, "A");
+  //     s_send (publisher, "We don't want to see this");
+  //     s_sendmore (publisher, "B");
+  //     s_send (publisher, "We would like to see this");
+  // }
+
 	// if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
 
@@ -519,7 +533,7 @@ int main(int argc, char* argv[]) {
   Mat BGR; // BGR mat
 
 	// video capture object to acquire webcam feed
-  const string videoStreamAddress = "http://192.168.1.10:8080/stream?topic=/image&dummy=param.mjpg";
+  const string videoStreamAddress = "http://192.168.1.78:8080/stream?topic=/image&dummy=param.mjpg";
 	VideoCapture capture;
   capture.open(videoStreamAddress); //set to 0 to use the webcam
 
@@ -531,14 +545,8 @@ int main(int argc, char* argv[]) {
     runFullCalibration(capture);
   }
 
-  printf("Done Calibrating\n");
-
-	//all of our operations will be performed within this loop
   capture.release();
-
-  printf("Released\n");
-
-  //namedWindow(windowName,WINDOW_NORMAL);
+  printf("Done Calibrating\n");
 
   //-----------------------------------------------------------------------------
   // start forked process and threads that:
@@ -547,27 +555,26 @@ int main(int argc, char* argv[]) {
   //  3) processes mat
   //-----------------------------------------------------------------------------
 
-  // pthread_t parser;
   pthread_t processor;
   sem_init(&frameRawSema,0,0);
   sem_init(&frameMatSema,0,0);
-  // pthread_create (&parser, NULL, parserThread, NULL);
   pthread_create (&processor, NULL, processorThread, NULL);
-  // ************************************************************************
-
   printf("Pthreads created\n");
 
-  while(1) {
+  string ball_string;
+  string home1_string;
+
+  while(true) {
     sem_wait(&frameMatSema);
     FrameMat frame = frameMat;
     // FrameMat frame = frameMatFifo.front();
     // frameMatFifo.pop();
 
     // store image to matrix
-	  // Time timestamp = frame.timestamp;
+	  Time timestamp = frame.timestamp;
 	  cameraFeed = frame.image;
 
-    //convert frame from BGR to HSV colorspace
+    // convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
     field_origin_y = field_center_y - (field_height/2);
     Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
@@ -575,13 +582,25 @@ int main(int argc, char* argv[]) {
 
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-    // // Track Ball
-    // inRange(HSV,ball.getHSVmin(),ball.getHSVmax(),threshold);
-    // ball.trackFilteredBall(threshold,HSV,cameraFeed);
+    // Track Ball
+    inRange(HSV,ball.getHSVmin(),ball.getHSVmax(), threshold);
+    ball_string = ball.trackFilteredBall(threshold, HSV, cameraFeed);
 
     // Track Home 1
-    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(),threshold);
-    home1.trackFilteredRobot(threshold,HSV,cameraFeed);
+    inRange(HSV,home1.getHSVmin(),home1.getHSVmax(), threshold);
+    home1_string = home1.trackFilteredRobot(threshold, HSV, cameraFeed);
+
+    if (ball_string == "") {
+      ball_string = "ball NULL NULL\n";
+    }
+
+    if (home1_string == "") {
+      home1_string = "robot1 NULL NULL NULL NULL\n";
+    }
+
+    string message = ball_string + home1_string;
+    s_sendmore (publisher, "A");
+    s_send (publisher, message);
 
     // // Track Away 1
     // inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
@@ -599,7 +618,7 @@ int main(int argc, char* argv[]) {
     line(cameraFeed,top_mid, bot_mid, Scalar(200,200,200), 1, 8, 0);
     line(cameraFeed,left_mid, right_mid, Scalar(200,200,200), 1, 8, 0);
 
-    //create window for trackbars
+    // create window for trackbars
     imshow(windowName,cameraFeed);
 
     // Wait to check if user wants to switch Home/Away

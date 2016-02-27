@@ -24,7 +24,7 @@ class Robot: public Object {
 
     // Robot methods
     void calibrateRobot(cv::VideoCapture capture);
-    void trackFilteredRobot(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
+    std::string trackFilteredRobot(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
     void drawRobot(cv::Mat &frame);
 
   private:

@@ -7,6 +7,7 @@
 #define BALL_H_
 
 #include "Object.h"
+#include "zhelpers.hpp"
 
 class Ball: public Object {
   public:
@@ -19,7 +20,7 @@ class Ball: public Object {
 
     // Ball Methods
     void calibrateBall(cv::VideoCapture capture);
-    void trackFilteredBall(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
+    std::string trackFilteredBall(cv::Mat threshold, cv::Mat HSV, cv::Mat &cameraFeed);
     void drawBall(cv::Mat &frame);
 };
 

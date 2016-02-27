@@ -39,7 +39,7 @@ typedef struct {
 #define MIN_CHANGE 2
 #define MAX_CHANGE 1000
 
-//default capture width and height
+// default capture width and height
 #define FRAME_WIDTH  640
 #define FRAME_HEIGHT 480
 

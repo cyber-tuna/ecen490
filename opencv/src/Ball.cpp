@@ -28,7 +28,7 @@ void Ball::calibrateBall(VideoCapture capture) {
   int field_origin_x;
   int field_origin_y;
 
-  //create trackbars
+  // create trackbars
   createHSVTrackbars();
 
   // Set Trackbar intial values
@@ -41,18 +41,18 @@ void Ball::calibrateBall(VideoCapture capture) {
 
   // Wait forever until user sets the values
    while (1) {
-    //store image to matrix
+    // store image to matrix
     capture.read(cameraFeed);
     // undistortImage(cameraFeed);
 
-    //convert frame from BGR to HSV colorspace
+    // convert frame from BGR to HSV colorspace
     field_origin_x = field_center_x - (field_width/2);
     field_origin_y = field_center_y - (field_height/2);
     Rect myROI(field_origin_x,field_origin_y,field_width, field_height);
     cameraFeed = cameraFeed(myROI);
     cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-    //if in calibration mode, we track objects based on the HSV slider values.
+    // if in calibration mode, we track objects based on the HSV slider values.
     inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 
     // Erode, then dialate to get a cleaner image
@@ -77,7 +77,7 @@ void Ball::calibrateBall(VideoCapture capture) {
     imshow(windowName2,threshold);
 
     char pressedKey;
-    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    pressedKey = waitKey(1); // Wait for user to press 'Enter'
     if (pressedKey == '\n') {
        Scalar hsv_min(h_min, s_min, v_min);
        Scalar hsv_max(h_max, s_max, v_max);
@@ -110,7 +110,7 @@ void Ball::calibrateBall(VideoCapture capture) {
 
 // Finds the contours (outlines) of the now filtered image and determine's its
 // center by examining its moments.
-void Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
+std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
   Mat temp;
   threshold.copyTo(temp);
@@ -118,15 +118,17 @@ void Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
   int largest_area = 0;
   int largest_contour_index = 0;
 
+  std::ostringstream of;
+
   //these two vectors needed for output of findContours
   vector< vector<Point> > contours;
   vector<Vec4i> hierarchy;
 
-  //find contours of filtered image using openCV findContours function
+  // find contours of filtered image using openCV findContours function
   findContours(temp,contours,hierarchy,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
 
-  //use moments method to find our filtered object
-  //double refArea = 0;
+  // use moments method to find our filtered object
+  // double refArea = 0;
   bool objectFound = false;
 
   if (contours.size() > 0) {
@@ -145,11 +147,13 @@ void Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
       Moments moment = moments((Mat)contours[largest_contour_index]);
 
-      //if the area is less than 20 px by 20px then it is probably just noise
-      //if the area is the same as the 3/2 of the image size, probably just a bad filter
-      //we only want the object with the largest area so we safe a reference area each
-      //iteration and compare it to the area in the next iteration.
+      // if the area is less than 20 px by 20px then it is probably just noise
+      // if the area is the same as the 3/2 of the image size, probably just a bad filter
+      // we only want the object with the largest area so we safe a reference area each
+      // iteration and compare it to the area in the next iteration.
       if(largest_area > MIN_OBJECT_AREA) {
+        of << "ball" << " ";
+
         Point fieldPosition = convertCoordinates(Point(moment.m10/moment.m00,
                                                        moment.m01/moment.m00));
 
@@ -157,43 +161,55 @@ void Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
           if (abs(this->get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
             this->set_x_pos(fieldPosition.x);
             this->set_img_x(moment.m10/moment.m00);
+            of << fieldPosition.x << " ";
+          } else {
+            of << fieldPosition.x << " ";
           }
 
           if (abs(this->get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
             this->set_y_pos(fieldPosition.y);
             this->set_img_y(moment.m01/moment.m00);
+            of << fieldPosition.y << "\n";
+          } else {
+            of << fieldPosition.y << "\n";
           }
         }
         else {
           if (abs(this->get_x_pos() + fieldPosition.x) > MIN_CHANGE) {
             this->set_x_pos(-fieldPosition.x);
             this->set_img_x(moment.m10/moment.m00);
+            of << fieldPosition.x << " ";
+          } else {
+            of << fieldPosition.x << " ";
           }
 
           if (abs(this->get_y_pos() + fieldPosition.y) > MIN_CHANGE) {
             this->set_y_pos(-fieldPosition.y);
             this->set_img_y(moment.m01/moment.m00);
+            of << fieldPosition.y << "\n";
+          } else {
+            of << fieldPosition.y << "\n";
           }
         }
 
         objectFound = true;
-
       }
       else {
         objectFound = false;
       }
 
-      //let user know you found an object
+      // let user know you found an object
       if(objectFound == true){
-        //draw object location on screen
+        // draw object location on screen
         this->drawBall(cameraFeed);
       }
-
     }
     else {
       putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
     }
   }
+
+  return of.str();
 }
 
 // Draws the ball location and information

@@ -108,7 +108,7 @@ void Robot::calibrateRobot(VideoCapture capture) {
     imshow(windowName,cameraFeed);
 
     char pressedKey;
-    pressedKey = cvWaitKey(50); // Wait for user to press 'Enter'
+    pressedKey = waitKey(1); // Wait for user to press 'Enter'
     if (pressedKey == '\n') {
       Scalar hsv_min(h_min, s_min, v_min);
       Scalar hsv_max(h_max, s_max, v_max);
@@ -116,7 +116,7 @@ void Robot::calibrateRobot(VideoCapture capture) {
       setHSVmin(hsv_min);
       setHSVmax(hsv_max);
 
-      printf("\n\nRobot HSV Values Saved!\n");
+      printf("\nRobot HSV Values Saved!\n");
       printf("h_min: %d\n", h_min);
       printf("h_max: %d\n", h_max);
       printf("s_min: %d\n", s_min);
@@ -141,10 +141,12 @@ void Robot::calibrateRobot(VideoCapture capture) {
 
 // Function specific for tracking robots. Will calculate the center of the robot as
 // well as the it's angle in relation to the horizontal.
-void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
+std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
   Mat temp;
   threshold.copyTo(temp);
   morphOps(temp);
+
+  std::ostringstream of;
 
   // c1 = Center Point of Big Circle
   // c2 = Center Point of Small Circle
@@ -186,14 +188,14 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     // Mark the bigger circle
     circle(cameraFeed, centerPoints[c1], 9, Scalar(255,0,0), -1, 8, 0);
 
-    //Draw line between centers
+    // Draw line between centers
     line(cameraFeed, centerPoints[c1], centerPoints[c2], Scalar(0,0,255), 4, 8, 0);
 
-    //Calculate the angle
+    // Calculate the angle
     float angle = (atan2(centerPoints[c2].y - centerPoints[c1].y,
                          centerPoints[c2].x - centerPoints[c1].x))*(180/PI);
 
-    //Convert to int
+    // Convert to int
     int intAngle = (int) angle;
     if (intAngle <= 0) {
       intAngle = intAngle * (-1); // make positive again
@@ -221,24 +223,38 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     Point fieldPosition = convertCoordinates(Point(real_center_x,
                                                    real_center_y));
 
+    of << "robot1" << " ";
+
     // Assign Robot it's variables based on team
     if (TEAM == HOME) {
+      of << "home" << " ";
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
+        of << intAngle << " ";
+      } else {
+        of << intAngle << " ";
       }
 
       if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
+        of << fieldPosition.x << " ";
+      } else {
+        of << fieldPosition.x << " ";
       }
 
       if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
+        of << fieldPosition.y << "\n";
+      } else {
+        of << fieldPosition.y << "\n";
       }
     } else {
+      of << "away" << " ";
+
       // Convert to Away Angle
       if (intAngle <= 180) {
         intAngle = 180 + intAngle;
@@ -248,23 +264,34 @@ void Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
 
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
+        of << intAngle << " ";
+      } else {
+        of << intAngle << " ";
       }
 
       if (abs(fieldPosition.x + this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x + this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(-fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
+        of << fieldPosition.x << " ";
+      } else {
+        of << fieldPosition.x << " ";
       }
 
       if (abs(fieldPosition.y + this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y + this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(-fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
+        of << fieldPosition.y << "\n";
+      } else {
+        of << fieldPosition.y << "\n";
       }
     }
 
     this->drawRobot(cameraFeed);
   }
+
+  return of.str();
 }
 
 // Setters and Getters
