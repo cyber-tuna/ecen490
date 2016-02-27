@@ -1,39 +1,91 @@
-import sys
+"""
+
+   Pubsub envelope subscriber
+
+   Author: Guillaume Aubert (gaubert) <guillaume(dot)aubert(at)gmail(dot)com>
+
+"""
 import zmq
-import msgpack
+import sys
+sys.path.append('/home/odroid/ecen490/')
+#from MotionControl.scripts.kalman_filter.Robot import Robot
+import MotionControl.scripts.kalman_filter.Robot as robot
+import MotionControl.scripts.motor_control.velchange as velchange
+import MotionControl.scripts.motor_control.roboclaw as roboclaw
+import MotionControl.scripts.Point as Point
+import MotionControl.scripts.param as param
+import MotionControl.scripts.MotionSkills as MotionSkills
+import time
+import thread
 
-port = "5556"
-if len(sys.argv) > 1:
-    port =  sys.argv[1]
-    int(port)
 
-if len(sys.argv) > 2:
-    port1 =  sys.argv[2]
-    int(port1)
+ip = "192.168.1.24"
+port = "5563"
 
-# Socket to talk to server
-context = zmq.Context()
-socket = context.socket(zmq.SUB)
+print "Calibrating Roboclaws"
+#roboclaw.calibrateRoboclaws()
 
-print "Collecting updates from weather server..."
-socket.connect ("tcp://192.168.1.40:%s" % port)
+state = robot.State()
 
-if len(sys.argv) > 2:
-    socket.connect ("tcp://192.168.1.40:%s" % port1)
+# Define a function for the thread
+def receive(threadName):
+    # Prepare our context and publisher
+    context    = zmq.Context()
+    subscriber = context.socket(zmq.SUB)
+    subscriber.connect("tcp://%s:%s" % (ip, port))
+    subscriber.setsockopt(zmq.SUBSCRIBE, b"A")
 
-    # Subscribe to zipcode, default is NYC, 10001
-topicfilter = "10001"
-socket.setsockopt(zmq.SUBSCRIBE, topicfilter)
+    while True:
+        address, contents = subscriber.recv_multipart()
+        # print contents
+        #type, robot_team, robot_angle, robot_x, robot_y = contents.split()
+        contentArray = contents.split()
+        # if contentArray[0] == "robot1" or "robot2":
+        #     robot_number = contentArray[0]
+        #     robot_team = contentArray[1]
+        #     robot_angle = contentArray[2]
+        #     robot_x = contentArray[3]
+        #     robot_y = contentArray[4]
+        #     print("Robot angle: %s" % robot_angle)
+        #     print("Robot x: %s" % robot_x)
+        #     print("Robot y: %s" % robot_y)
 
-# Process 5 updates
-total_value = 0
-for update_nbr in range (5):
-    string = socket.recv()
-    topic, messagedata = string.split()
-    decoded_data = msgpack.unpackb(messagedata)
-    print "Received on topic %s: " %(topic) , decoded_data["ball"]["x_pos"]
+        ball_x = contentArray[1]
+        ball_y = contentArray[2]
 
-    #total_value += int(messagedata)
-    #print topic, messagedata
+        robot_angle = contentArray[5]
+        robot_x = contentArray[6]
+        robot_y = contentArray[7]
 
-#print "Average messagedata value for topic '%s' was %dF" % (topicfilter, total_value / update_nbr)
+        #Update the robot state
+        state.pos_x_est = robot_x;
+        state.pos_y_est = robot_y;
+
+        # elif contentArray[0] == "ball":
+        # ball_x = contentArray[1]
+        # ball_y = contentArray[2]
+
+        # print("[%s] %s" % (address, contents))
+        # print
+
+    # We never get here but clean up anyhow
+    subscriber.close()
+    context.term()
+
+def main():
+    """ main method """
+    try:
+        thread.start_new_thread( receive, ("ReceiverThread", ) )
+    except:
+        print "Error: unable to start thread"
+
+    while 1:
+        # print("Ball x: %s" % ball_x)
+        # print("Ball y: %s" % ball_y)
+        # print("Robot angle: %s" % robot_angle)
+        print("Robot x: %s" % state.pos_x_est)
+        print("Robot y: %s" % state.pos_y_est)
+        print
+
+if __name__ == "__main__":
+    main()
