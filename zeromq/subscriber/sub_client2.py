@@ -28,8 +28,7 @@ mutex = Lock()
 home_robot_state = robot.State()
 away_robot_state = robot.State()
 
-ball_x = 0
-ball_y = 0
+ball = Point.Point()
 
 # Define a function for the thread
 def receive(threadName, *args):
@@ -46,9 +45,6 @@ def receive(threadName, *args):
 
         contentArray = contents.split()
 
-        global ball_x
-        global ball_y
-
         home_robot_angle = contentArray[0]
         home_robot_x = contentArray[1]
         home_robot_y = contentArray[2]
@@ -59,6 +55,8 @@ def receive(threadName, *args):
 
         ball_x = param.pixelToMeter(float(contentArray[6]))
         ball_y = param.pixelToMeter(float(contentArray[7]))
+        ball.x = ball_x
+        ball.y = ball_y
 
         home_robot_state.pos_theta_est = param.degreeToRadian(float(home_robot_angle))
         home_robot_state.pos_x_est = param.pixelToMeter(float(home_robot_x))
@@ -101,7 +99,6 @@ def follow_behind_ball():
     mutex.acquire()
 
     while True:
-        ball = Point.Point(ball_x, ball_y)
         desiredPoint = MotionSkills.getPointBehindBall(ball)
 
         if (home_robot_state.pos_x_est > (desiredPoint.x + 0.05) or home_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
@@ -111,8 +108,6 @@ def follow_behind_ball():
 def go_to_point_behind_ball():
     mutex.acquire()
 
-
-    ball = Point.Point(ball_x, ball_y)
     desiredPoint = MotionSkills.getPointBehindBall(ball)
 
     robot_point = Point.Point(home_robot_state.pos_x_est, home_robot_state.pos_y_est)
@@ -159,13 +154,13 @@ def go_to_center():
 def defend_goal():
     mutex.acquire()
 
-    desiredPoint = Point.Point(0.5, ball_y)
+    desiredPoint = Point.Point(0.5, ball.y)
 
     while (home_robot_state.pos_x_est > (desiredPoint.x + 0.05) or home_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
             (home_robot_state.pos_y_est > (desiredPoint.y + 0.05) or home_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
 
         command = MotionSkills.go_to_point(home_robot_state, desiredPoint)
-        angular_command = MotionSkills.go_to_angle(home_robot_state, Point.Point(ball_x, ball_y))
+        angular_command = MotionSkills.go_to_angle(home_robot_state, Point.Point(ball.x, ball.y))
         omega = angular_command.omega
 
         velchange.goXYOmegaTheta(command.vel_x, command.vel_y, 0 , home_robot_state.pos_theta_est)
