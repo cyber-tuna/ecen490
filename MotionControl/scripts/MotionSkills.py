@@ -75,10 +75,10 @@ class MotionSkills:
     @staticmethod
     def go_to_angle(currentRobotState, lookToPoint):
         currentAngle = currentRobotState.pos_theta_est
-        print "current angle", currentAngle
+        #print "current angle", currentAngle
         point = Point(currentRobotState.pos_x_est,currentRobotState.pos_y_est)
         desiredAngle = MotionSkills.angleBetweenPoints(point, lookToPoint)
-        print "desired angle", desiredAngle
+        #print "desired angle", desiredAngle
         delta =  MotionSkills.deltaBetweenAngles(currentAngle, desiredAngle)
         runTime = abs(delta/SPEED_ROTATION)
 
@@ -154,7 +154,7 @@ class MotionSkills:
     @staticmethod
     #behind_x is the allowed distance behind the ball the robot can go while still rushing the ball
     def isBallInFrontOfRobot(robotState,ball,param_x = .5, param_y = .04, behind_x = 0):
-        refPoint = Point(ball.x-robotState.x,ball.y - robotState.y)
+        refPoint = Point(ball.x-robotState.pos_x_est,ball.y - robotState.pos_y_est)
         if refPoint.x < 0:
           if abs(refPoint.x) < behind_x:
             print "behind ball %.2f m but still rushing" %(abs(refPoint.x))
@@ -162,12 +162,14 @@ class MotionSkills:
           else:
             print "ball is too far behind, stopping rush"
             return False
+        else:
+            print "behind ball"
         #print "refence from robot: %f, %f" % (refPoint.x,refPoint.y)
         #print "angle: %f" % robotState.theta
-        rotatedPoint = MotionSkills.rotatePointByAngle(refPoint, robotState.theta)
-        #print "rotatedPoint to robot frame: %f, %f" % (rotatedPoint.x,rotatedPoint.y)
-        angleToGoal = MotionSkills.angleBetweenPoints(robotState, HOME_GOAL)
-        angleDiff = abs(angleToGoal-robotState.theta)
+        rotatedPoint = MotionSkills.rotatePointByAngle(refPoint, robotState.pos_theta_est)
+        print "rotatedPoint to robot frame: %f, %f" % (rotatedPoint.x,rotatedPoint.y)
+        angleToGoal = MotionSkills.angleBetweenPoints(Point(robotState.pos_x_est,robotState.pos_y_est), HOME_GOAL)
+        angleDiff = abs(angleToGoal-robotState.pos_theta_est)
         if angleDiff > math.pi:
             angleDiff = (2*math.pi - angleDiff)
         #print 'angle difference: %d' %((angleDiff/math.pi)*180)

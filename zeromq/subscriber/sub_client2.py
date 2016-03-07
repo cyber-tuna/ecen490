@@ -20,7 +20,7 @@ import time
 import thread
 import zmq
 
-ip = "192.168.1.24"
+ip = "192.168.1.28"
 port = "5563"
 
 mutex = Lock()
@@ -38,6 +38,8 @@ def receive(threadName, *args):
     subscriber = context.socket(zmq.SUB)
     subscriber.connect("tcp://%s:%s" % (ip, port))
     subscriber.setsockopt(zmq.SUBSCRIBE, b"A")
+
+    print "receive"
 
     while True:
         address, contents = subscriber.recv_multipart()
@@ -79,10 +81,11 @@ def receive(threadName, *args):
 def rush_goal():
     mutex.acquire()
 
+
     desiredPoint = param.HOME_GOAL
 
-    while (home_robot_state.pos_x_est < (desiredPoint.x - 0.1)) or \
-            (home_robot_state.pos_y_est > (desiredPoint.y + 0.1) or home_robot_state.pos_y_est < (desiredPoint.y - 0.1)):
+    while (home_robot_state.pos_x_est < (desiredPoint.x - 0.4)) or \
+            (home_robot_state.pos_y_est > (desiredPoint.y + 0.4) or home_robot_state.pos_y_est < (desiredPoint.y - 0.4)):
 
         command = MotionSkills.go_to_point(home_robot_state, desiredPoint)
         angular_command = MotionSkills.go_to_angle(home_robot_state, param.HOME_GOAL)
@@ -94,10 +97,20 @@ def rush_goal():
 
     velchange.goXYOmega(0,0,0)
 
+def follow_behind_ball():
+    mutex.acquire()
+
+    while True:
+        ball = Point.Point(ball_x, ball_y)
+        desiredPoint = MotionSkills.getPointBehindBall(ball)
+
+        if (home_robot_state.pos_x_est > (desiredPoint.x + 0.05) or home_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
+            (home_robot_state.pos_y_est > (desiredPoint.y + 0.05) or home_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
+            go_to_point_behind_ball()
 
 def go_to_point_behind_ball():
-
     mutex.acquire()
+
 
     ball = Point.Point(ball_x, ball_y)
     desiredPoint = MotionSkills.getPointBehindBall(ball)
@@ -108,8 +121,8 @@ def go_to_point_behind_ball():
     print "angle", param.radianToDegree(home_robot_state.pos_theta_est)
     print "desiredAngle", param.radianToDegree(desiredAngle)
 
-    while (home_robot_state.pos_x_est > (desiredPoint.x + 0.05) or home_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
-            (home_robot_state.pos_y_est > (desiredPoint.y + 0.05) or home_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
+    while (home_robot_state.pos_x_est > (desiredPoint.x + 0.04) or home_robot_state.pos_x_est < (desiredPoint.x - 0.04)) or \
+            (home_robot_state.pos_y_est > (desiredPoint.y + 0.04) or home_robot_state.pos_y_est < (desiredPoint.y - 0.04)):
 
         command = MotionSkills.go_to_point(home_robot_state, desiredPoint)
         angular_command = MotionSkills.go_to_angle(home_robot_state, param.HOME_GOAL)
@@ -143,13 +156,31 @@ def go_to_center():
 
     velchange.goXYOmega(0,0,0)
 
+def defend_goal():
+    mutex.acquire()
+
+    desiredPoint = Point.Point(0.5, ball_y)
+
+    while (home_robot_state.pos_x_est > (desiredPoint.x + 0.05) or home_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
+            (home_robot_state.pos_y_est > (desiredPoint.y + 0.05) or home_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
+
+        command = MotionSkills.go_to_point(home_robot_state, desiredPoint)
+        angular_command = MotionSkills.go_to_angle(home_robot_state, Point.Point(ball_x, ball_y))
+        omega = angular_command.omega
+
+        velchange.goXYOmegaTheta(command.vel_x, command.vel_y, 0 , home_robot_state.pos_theta_est)
+        time.sleep(0.01)
+
+    velchange.goXYOmega(0,0,0)
+
 
 def score_goal():
+    print "score goal"
     mutex.acquire()
 
     go_to_point_behind_ball()
-    # rush_goal()
-    # go_to_center()
+    rush_goal()
+    go_to_center()
 
 
 def main():
@@ -173,11 +204,13 @@ def main():
     #     follow_ball()
     # else:
     #     print "invalid skill"
-    #     return
+    #
 
-    #score_goal()
+
+    #follow_behind_ball()
     #rush_goal()
-    go_to_center()
+    score_goal()
+    # go_to_point_behind_ball()
 
 if __name__ == "__main__":
     print "Calibrating Roboclaws"
