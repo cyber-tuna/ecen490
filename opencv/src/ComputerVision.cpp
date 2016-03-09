@@ -86,8 +86,6 @@ Robot away2(AWAY);
 Ball ball;
 
 // Globals used for processing threads
-sem_t frameRawSema;
-std::queue<FrameRaw> frameRawFifo;
 sem_t frameMatSema;
 std::queue<FrameMat> frameMatFifo;
 FrameMat frameMat;
@@ -148,14 +146,14 @@ void saveSettings() {
   // tempV = home2.getHSVmax().val[2];
   // of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
-  // tempH = away1.getHSVmin().val[0];
-  // tempS = away1.getHSVmin().val[1];
-  // tempV = away1.getHSVmin().val[2];
-  // of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
-  // tempH = away1.getHSVmax().val[0];
-  // tempS = away1.getHSVmax().val[1];
-  // tempV = away1.getHSVmax().val[2];
-  // of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
+  tempH = away1.getHSVmin().val[0];
+  tempS = away1.getHSVmin().val[1];
+  tempV = away1.getHSVmin().val[2];
+  of << a1 << " " <<  tempH << " " <<  tempS << " " <<  tempV;
+  tempH = away1.getHSVmax().val[0];
+  tempS = away1.getHSVmax().val[1];
+  tempV = away1.getHSVmax().val[2];
+  of << " " <<  tempH << " " <<  tempS << " " <<  tempV << "\n";
 
   // tempH = away2.getHSVmin().val[0];
   // tempS = away2.getHSVmin().val[1];
@@ -457,7 +455,7 @@ void runFullCalibration(VideoCapture capture) {
   ball.calibrateBall(capture);
   home1.calibrateRobot(capture);
   //Home2.calibrateRobot(capture);
-  //away1.calibrateRobot(capture);
+  away1.calibrateRobot(capture);
   //Away2.calibrateRobot(capture);
   saveSettings();
 }
@@ -478,10 +476,6 @@ void *processorThread(void *notUsed) {
   capture.open(videoStreamAddress);
 
   while(true) {
-    //sem_wait(&frameRawSema);
-    //frameRaw = frameRawFifo.front();
-    //frameRawFifo.pop();
-
     // int value;
     // sem_getvalue(&frameMatSema, &value);
     // if (value < MIN_BUFFER_SIZE) {
@@ -509,14 +503,6 @@ int main(int argc, char* argv[]) {
   zmq::socket_t publisher(context, ZMQ_PUB);
   publisher.bind("tcp://*:5563");
 
-  // while (1) {
-  //     //  Write two messages, each with an envelope and content
-  //     s_sendmore (publisher, "A");
-  //     s_send (publisher, "We don't want to see this");
-  //     s_sendmore (publisher, "B");
-  //     s_send (publisher, "We would like to see this");
-  // }
-
 	// if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
 
@@ -535,7 +521,7 @@ int main(int argc, char* argv[]) {
 	// video capture object to acquire webcam feed
   const string videoStreamAddress = "http://192.168.1.78:8080/stream?topic=/image&dummy=param.mjpg";
 	VideoCapture capture;
-  capture.open(videoStreamAddress); //set to 0 to use the webcam
+  capture.open(videoStreamAddress); // set to 0 to use the webcam
 
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
@@ -556,13 +542,13 @@ int main(int argc, char* argv[]) {
   //-----------------------------------------------------------------------------
 
   pthread_t processor;
-  sem_init(&frameRawSema,0,0);
   sem_init(&frameMatSema,0,0);
   pthread_create (&processor, NULL, processorThread, NULL);
   printf("Pthreads created\n");
 
-  string ball_string;
-  string home1_string;
+  std::string ball_string;
+  std::string home1_string;
+  std::string away1_string;
 
   while(true) {
     sem_wait(&frameMatSema);
@@ -590,21 +576,9 @@ int main(int argc, char* argv[]) {
     inRange(HSV,home1.getHSVmin(),home1.getHSVmax(), threshold);
     home1_string = home1.trackFilteredRobot(threshold, HSV, cameraFeed);
 
-    if (ball_string == "") {
-      ball_string = "ball NULL NULL\n";
-    }
-
-    if (home1_string == "") {
-      home1_string = "robot1 NULL NULL NULL NULL\n";
-    }
-
-    string message = ball_string + home1_string;
-    s_sendmore (publisher, "A");
-    s_send (publisher, message);
-
-    // // Track Away 1
-    // inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
-    // away1.trackFilteredRobot(threshold,HSV,cameraFeed);
+    // Track Away 1
+    inRange(HSV,away1.getHSVmin(),away1.getHSVmax(),threshold);
+    away1_string = away1.trackFilteredRobot(threshold,HSV,cameraFeed);
 
     // Show Field Outline
     Rect fieldOutline(0, 0, field_width, field_height);
@@ -621,13 +595,28 @@ int main(int argc, char* argv[]) {
     // create window for trackbars
     imshow(windowName,cameraFeed);
 
+    if (home1_string == "") {
+      home1_string = "NULL NULL NULL\n";
+    }
+
+    if (away1_string == "") {
+      away1_string = "NULL NULL NULL\n";
+    }
+
+    if (ball_string == "") {
+      ball_string = "NULL NULL\n";
+    }
+
+    std::string message = home1_string + away1_string + ball_string;
+    s_sendmore (publisher, "A");
+    s_send (publisher, message);
+
     // Wait to check if user wants to switch Home/Away
     char pressedKey;
     pressedKey = waitKey(1); // Wait for user to press 'Enter'
     if (pressedKey == 'a') {
       TEAM = AWAY;
-    }
-    else if (pressedKey == 'h') {
+    } else if (pressedKey == 'h') {
       TEAM = HOME;
     }
 	}

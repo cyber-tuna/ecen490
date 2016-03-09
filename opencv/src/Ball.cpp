@@ -118,7 +118,6 @@ std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
   int largest_area = 0;
   int largest_contour_index = 0;
 
-  std::ostringstream of;
 
   //these two vectors needed for output of findContours
   vector< vector<Point> > contours;
@@ -134,7 +133,7 @@ std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
   if (contours.size() > 0) {
     int numObjects = hierarchy.size();
     //if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
-    if(numObjects<MAX_NUM_OBJECTS){
+    if(numObjects<MAX_NUM_OBJECTS) {
 
       // Iterate over all contours to find the largest
       for (unsigned i = 0; i < contours.size(); i++) {
@@ -152,7 +151,6 @@ std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
       // we only want the object with the largest area so we safe a reference area each
       // iteration and compare it to the area in the next iteration.
       if(largest_area > MIN_OBJECT_AREA) {
-        of << "ball" << " ";
 
         Point fieldPosition = convertCoordinates(Point(moment.m10/moment.m00,
                                                        moment.m01/moment.m00));
@@ -161,34 +159,22 @@ std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
           if (abs(this->get_x_pos() - fieldPosition.x) > MIN_CHANGE) {
             this->set_x_pos(fieldPosition.x);
             this->set_img_x(moment.m10/moment.m00);
-            of << fieldPosition.x << " ";
-          } else {
-            of << fieldPosition.x << " ";
           }
 
           if (abs(this->get_y_pos() - fieldPosition.y) > MIN_CHANGE) {
             this->set_y_pos(fieldPosition.y);
             this->set_img_y(moment.m01/moment.m00);
-            of << fieldPosition.y << "\n";
-          } else {
-            of << fieldPosition.y << "\n";
           }
         }
         else {
           if (abs(this->get_x_pos() + fieldPosition.x) > MIN_CHANGE) {
             this->set_x_pos(-fieldPosition.x);
             this->set_img_x(moment.m10/moment.m00);
-            of << fieldPosition.x << " ";
-          } else {
-            of << fieldPosition.x << " ";
           }
 
           if (abs(this->get_y_pos() + fieldPosition.y) > MIN_CHANGE) {
             this->set_y_pos(-fieldPosition.y);
             this->set_img_y(moment.m01/moment.m00);
-            of << fieldPosition.y << "\n";
-          } else {
-            of << fieldPosition.y << "\n";
           }
         }
 
@@ -209,6 +195,9 @@ std::string Ball::trackFilteredBall(Mat threshold, Mat HSV, Mat &cameraFeed) {
     }
   }
 
+  std::ostringstream of;
+  of << this->get_x_pos() << " ";
+  of << this->get_y_pos() << "\n";
   return of.str();
 }
 
