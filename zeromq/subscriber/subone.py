@@ -3,6 +3,7 @@
 """
 
 import sys
+from timeit import default_timer
 sys.path.append('/home/odroid/ecen490/')
 
 #from MotionControl.scripts.kalman_filter.Robot import Robot
@@ -75,12 +76,17 @@ def receive(threadName, *args):
 
 
 def rush_goal():
+    print "rush goal"
+
     mutex.acquire()
 
     desiredPoint = goal
 
     while (team1_robot_state.pos_x_est < (desiredPoint.x - 0.4)) or \
             (team1_robot_state.pos_y_est > (desiredPoint.y + 0.4) or team1_robot_state.pos_y_est < (desiredPoint.y - 0.4)):
+
+        if team1_robot_state.pos_x_est > ball.x:
+            break
 
         command = MotionSkills.go_to_point(team1_robot_state, desiredPoint)
         angular_command = MotionSkills.go_to_angle(team1_robot_state, goal)
@@ -103,18 +109,16 @@ def follow_behind_ball():
             go_to_point_behind_ball()
 
 def go_to_point_behind_ball():
-    mutex.acquire()
-
     robot_point = Point.Point(team1_robot_state.pos_x_est, team1_robot_state.pos_y_est)
     desiredPoint = MotionSkills.getPointBehindBall(ball, goal)
     desiredAngle = MotionSkills.angleBetweenPoints(robot_point, goal)
 
-    print "angle", param.radianToDegree(team1_robot_state.pos_theta_est)
-    print "desiredAngle", param.radianToDegree(desiredAngle)
-    print "desiredPoint", param.meterToPixel(desiredPoint.x), param.meterToPixel(desiredPoint.y)
+    # print "angle", param.radianToDegree(team1_robot_state.pos_theta_est)
+    # print "desiredAngle", param.radianToDegree(desiredAngle)
+    # print "desiredPoint", param.meterToPixel(desiredPoint.x), param.meterToPixel(desiredPoint.y)
 
-    while (team1_robot_state.pos_x_est > (desiredPoint.x + 0.04) or team1_robot_state.pos_x_est < (desiredPoint.x - 0.04)) or \
-            (team1_robot_state.pos_y_est > (desiredPoint.y + 0.04) or team1_robot_state.pos_y_est < (desiredPoint.y - 0.04)):
+    while (team1_robot_state.pos_x_est > (desiredPoint.x + 0.05) or team1_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
+            (team1_robot_state.pos_y_est > (desiredPoint.y + 0.05) or team1_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
 
         command = MotionSkills.go_to_point(team1_robot_state, desiredPoint)
         angular_command = MotionSkills.go_to_angle(team1_robot_state, goal)
@@ -147,18 +151,34 @@ def go_to_center():
     velchange.goXYOmega(0,0,0)
 
 def defend_goal():
-    mutex.acquire()
-
-    desiredPoint = Point.Point(0.5, ball.y)
+    desiredPoint = Point.Point(param.AWAY_GOAL.x + 0.5 , ball.y)
 
     while (team1_robot_state.pos_x_est > (desiredPoint.x + 0.05) or team1_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
             (team1_robot_state.pos_y_est > (desiredPoint.y + 0.05) or team1_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
 
         command = MotionSkills.go_to_point(team1_robot_state, desiredPoint)
-        angular_command = MotionSkills.go_to_angle(team1_robot_state, ball)
+        angular_command = MotionSkills.go_to_angle(team1_robot_state, goal)
         omega = angular_command.omega
 
-        velchange.goXYOmegaTheta(command.vel_x, command.vel_y, 0 , team1_robot_state.pos_theta_est)
+        velchange.goXYOmegaTheta(command.vel_x, command.vel_y, omega, team1_robot_state.pos_theta_est)
+        time.sleep(0.001)
+
+    velchange.goXYOmega(0,0,0)
+
+def go_to_home():
+    print "going home"
+    mutex.acquire()
+
+    desiredPoint = Point.Point(param.AWAY_GOAL.x + 0.5 , ball.y)
+
+    while (team1_robot_state.pos_x_est > (desiredPoint.x + 0.05) or team1_robot_state.pos_x_est < (desiredPoint.x - 0.05)) or \
+            (team1_robot_state.pos_y_est > (desiredPoint.y + 0.05) or team1_robot_state.pos_y_est < (desiredPoint.y - 0.05)):
+
+        command = MotionSkills.go_to_point(team1_robot_state, desiredPoint)
+        angular_command = MotionSkills.go_to_angle(team1_robot_state, goal)
+        omega = angular_command.omega
+
+        velchange.goXYOmegaTheta(command.vel_x, command.vel_y, omega , team1_robot_state.pos_theta_est)
         time.sleep(robot_update_delay)
 
     velchange.goXYOmega(0,0,0)
@@ -171,6 +191,64 @@ def score_goal():
     go_to_point_behind_ball()
     rush_goal()
     go_to_center()
+
+def one_on_one():
+    mutex.acquire()
+
+    state = "defend"
+    start = default_timer()
+    ball_prev_x = ball.x
+    ball_prev_y = ball.y
+
+    while True:
+        if state == "defend":
+            print "state: defend"
+            if ball.x > 0: # < 0
+                # transition
+                state = "score"
+            else:
+                # save state
+                ball_prev_x = ball.x
+                ball_prev_y = ball.y
+
+                # restart timer
+                start = default_timer()
+
+                # transition
+                state = "defend_goal"
+
+        elif state == "defend_goal":
+            print "state: defend_goal"
+
+            if ball.x > 0: # < 0
+                # transition
+                state = "score"
+                continue
+
+            if abs(ball.x - ball_prev_x) < 0.04 and abs(ball.y - ball_prev_y) < 0.04:
+                if default_timer() - start > 4:
+                    state = "score"
+                else:
+                    defend_goal()
+            else:
+                start = default_timer()
+                ball_prev_x = ball.x
+                ball_prev_y = ball.y
+                defend_goal()
+
+        elif state == "score":
+            print "state: score"
+
+            go_to_point_behind_ball()
+            rush_goal()
+
+            go_to_home()
+
+            # transition
+            state = "defend"
+
+# face away from goal as robot goes to defend
+# if the ball starts moving when the robot goes to attack, will it go back to defend?
 
 def main():
     """ main method """
@@ -186,7 +264,6 @@ def main():
     direction = sys.argv[1]
     if direction.lower() == "home":
         print "Playing home team"
-
         goal = param.HOME_GOAL
     elif direction.lower() == "away":
         print "Playing away team"
@@ -195,7 +272,6 @@ def main():
         print "ERROR: invalid direction argument"
         return
 
-
     try:
         thread.start_new_thread(receive, ("ReceiverThread", 1))
     except:
@@ -203,23 +279,11 @@ def main():
 
     mutex.acquire()
 
-
-    mutex.acquire()
-
-    desiredPoint = Point.Point(param.pixelToMeter(50), param.pixelToMeter(50))
-    command = MotionSkills.go_to_point(team1_robot_state, desiredPoint)
-
-    velchange.goXYOmegaTheta(command.vel_x, command.vel_y, 0 , team1_robot_state.pos_theta_est)
-    time.sleep(command.runTime)
-    velchange.goXYOmega(0,0,0)
-
-    # angular_command = MotionSkills.go_to_angle(team1_robot_state, goal)
-    # velchange.goXYOmega(0,0,angular_command.omega)
-
     #follow_behind_ball()
     #rush_goal()
-    score_goal()
+    # score_goal()
     # go_to_point_behind_ball()
+    one_on_one()
 
 
 if __name__ == "__main__":
