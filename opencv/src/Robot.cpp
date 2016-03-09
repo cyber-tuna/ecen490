@@ -146,8 +146,6 @@ std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
   threshold.copyTo(temp);
   morphOps(temp);
 
-  std::ostringstream of;
-
   // c1 = Center Point of Big Circle
   // c2 = Center Point of Small Circle
   int c1 = 0, c2 = 1;
@@ -199,8 +197,7 @@ std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     int intAngle = (int) angle;
     if (intAngle <= 0) {
       intAngle = intAngle * (-1); // make positive again
-    }
-    else {
+    } else {
       intAngle = 360-intAngle;
     }
 
@@ -223,73 +220,53 @@ std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
     Point fieldPosition = convertCoordinates(Point(real_center_x,
                                                    real_center_y));
 
-    of << "robot1" << " ";
-
     // Assign Robot it's variables based on team
     if (TEAM == HOME) {
-      of << "home" << " ";
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
-        of << intAngle << " ";
-      } else {
-        of << intAngle << " ";
       }
 
       if (abs(fieldPosition.x - this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x - this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
-        of << fieldPosition.x << " ";
-      } else {
-        of << fieldPosition.x << " ";
       }
 
       if (abs(fieldPosition.y - this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y - this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
-        of << fieldPosition.y << "\n";
-      } else {
-        of << fieldPosition.y << "\n";
       }
     } else {
-      of << "away" << " ";
-
       // Convert to Away Angle
       if (intAngle <= 180) {
         intAngle = 180 + intAngle;
-      } else {
-        intAngle = intAngle - 180;
       }
 
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
         this->setAngle(intAngle);
-        of << intAngle << " ";
-      } else {
-        of << intAngle << " ";
       }
 
       if (abs(fieldPosition.x + this->get_x_pos()) > MIN_CHANGE &&
           abs(fieldPosition.x + this->get_x_pos()) < MAX_CHANGE) {
         this->set_x_pos(-fieldPosition.x);
         this->set_img_x((int)centerPoints[c1].x);
-        of << fieldPosition.x << " ";
-      } else {
-        of << fieldPosition.x << " ";
       }
 
       if (abs(fieldPosition.y + this->get_y_pos()) > MIN_CHANGE &&
           abs(fieldPosition.y + this->get_y_pos()) < MAX_CHANGE) {
         this->set_y_pos(-fieldPosition.y);
         this->set_img_y((int)centerPoints[c1].y);
-        of << fieldPosition.y << "\n";
-      } else {
-        of << fieldPosition.y << "\n";
       }
     }
 
     this->drawRobot(cameraFeed);
   }
+
+  std::ostringstream of;
+  of << this->getAngle() << " ";
+  of << this->get_x_pos() << " ";
+  of << this->get_y_pos() << "\n";
 
   return of.str();
 }

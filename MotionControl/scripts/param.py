@@ -28,7 +28,7 @@ SPEED_ROBOT = 0.6 # part of deprecated function.
 SPEED_ROTATION = 1 # part of deprecated function.
 DIS_BEHIND_BALL = .3
 HOME_GOAL = Point(pixelToMeter(350),0)
-AWAY_GOAL = Point(pixelToMeter(-350),0)
+AWAY_GOAL0 = Point(pixelToMeter(-350),0)
 CENTER = Point();
 
 HEIGHT_FIELD = 500
