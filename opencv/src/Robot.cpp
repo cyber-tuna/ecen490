@@ -201,13 +201,6 @@ std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       intAngle = 360-intAngle;
     }
 
-//    // Correct angle to the Robot's X-axis
-//    if (intAngle > 90) {
-//      intAngle = intAngle - 90;
-//    } else {
-//      intAngle = 270 + intAngle;
-//    }
-
     // Center the points of the robot
     int real_center_x;
     int real_center_y;
@@ -241,6 +234,8 @@ std::string Robot::trackFilteredRobot(Mat threshold, Mat HSV, Mat &cameraFeed) {
       // Convert to Away Angle
       if (intAngle <= 180) {
         intAngle = 180 + intAngle;
+      } else {
+        intAngle -= 180;
       }
 
       if (abs(intAngle - this->getOldAngle()) > MIN_CHANGE) {
