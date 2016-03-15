@@ -103,7 +103,6 @@ def leftTurnMomentum():
   time.sleep(1)
   goXYThetaAccel(0,0,0,1)
 
-
 def leftTurn():
   goXYThetaAccel(1.0,0.0,0.0,1)
   time.sleep(2)

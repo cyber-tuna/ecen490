@@ -2,8 +2,8 @@ import math
 import time
 from Point import Point
 
-PIXELS_PER_METER = 217.0
-HEIGHT_CAMERA = 3.0099 #2.921
+PIXELS_PER_METER = 185.0
+HEIGHT_CAMERA = 3.2099 #2.921
 HEIGHT_ROBOT = .116332
 
 # conversion functions
@@ -24,11 +24,11 @@ SCALE_OMEGA = 3.0
 RUSH_SPEED = .3
 CIRCLE_SPEED = .3
 
-SPEED_ROBOT = 0.6 # part of deprecated function.
+SPEED_ROBOT = 0.64 # part of deprecated function.
 SPEED_ROTATION = 1 # part of deprecated function.
 DIS_BEHIND_BALL = .3
 HOME_GOAL = Point(pixelToMeter(350),0)
-AWAY_GOAL0 = Point(pixelToMeter(-350),0)
+AWAY_GOAL = Point(pixelToMeter(-350),0)
 CENTER = Point();
 
 HEIGHT_FIELD = 500
