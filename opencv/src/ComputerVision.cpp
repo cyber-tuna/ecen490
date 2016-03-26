@@ -188,7 +188,7 @@ void saveSettings() {
 }
 
 // Reads in saved settings from settings.data and stores them in objects
-void restoreSettings() {
+void restoreSettings(char *colorFile) {
   const string h1 = "Home1";
   const string h2 = "Home2";
   const string a1 = "Away1";
@@ -273,6 +273,80 @@ void restoreSettings() {
   }
 
   in.close();
+
+  // parse additional file and replace default values
+  if (colorFile != "") {
+
+    std::stringstream ss;
+    std::ifstream in(colorFile);
+
+    // Parse File line by line
+    while(getline(in, line)) {
+      if (line.c_str()[0] == '#') {
+        continue; // skip comments
+      }
+
+      ss.str(line);
+      ss >> ID;
+
+      if (ID == h1) {
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        home1.setHSVmin(Scalar(tempH, tempS, tempV));
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        home1.setHSVmax(Scalar(tempH, tempS, tempV));
+      } else if (ID == h2) {
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        home2.setHSVmin(Scalar(tempH, tempS, tempV));
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        home2.setHSVmax(Scalar(tempH, tempS, tempV));
+      } else if (ID == a1) {
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        away1.setHSVmin(Scalar(tempH, tempS, tempV));
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        away1.setHSVmax(Scalar(tempH, tempS, tempV));
+      } else if (ID == a2) {
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        away2.setHSVmin(Scalar(tempH, tempS, tempV));
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        away2.setHSVmax(Scalar(tempH, tempS, tempV));
+      } else if (ID == b) {
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        ball.setHSVmin(Scalar(tempH, tempS, tempV));
+        ss >> tempH;
+        ss >> tempS;
+        ss >> tempV;
+        ball.setHSVmax(Scalar(tempH, tempS, tempV));
+      } else if (ID == f) {
+        ss >> field_center_x;
+        ss >> field_center_y;
+        ss >> field_width;
+        ss >> field_height;
+      }
+
+      ss.clear();
+    }
+
+    in.close();
+  }
+
   printf("Settings Restored!\n");
 }
 
@@ -449,8 +523,8 @@ void calibrateField(VideoCapture capture) {
 }
 
 // Generates all the calibration prompts (field + ball + robots)
-void runFullCalibration(VideoCapture capture) {
-  restoreSettings();
+void runFullCalibration(VideoCapture capture, char *colorFile) {
+  restoreSettings(colorFile);
   calibrateField(capture);
   ball.calibrateBall(capture);
   home1.calibrateRobot(capture);
@@ -466,8 +540,6 @@ void runFullCalibration(VideoCapture capture) {
 
 // This thread converts JPEGs into Mats and undistorts them.
 void *processorThread(void *notUsed) {
-  printf("processorThread\n");
-
   FrameRaw frameRaw;
 
   const string videoStreamAddress = "http://192.168.1.78:8080/stream?topic=/image&dummy=param.mjpg";
@@ -487,7 +559,7 @@ void *processorThread(void *notUsed) {
 //  Main
 //-----------------------------------------------------------------------------
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   //  Prepare our context and publisher
   zmq::context_t context(1);
   zmq::socket_t publisher(context, ZMQ_PUB);
@@ -518,7 +590,7 @@ int main(int argc, char* argv[]) {
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 
   if (calibrationMode == true) {
-    runFullCalibration(capture);
+    runFullCalibration(capture, argv[1]);
   }
 
   capture.release();
@@ -534,7 +606,6 @@ int main(int argc, char* argv[]) {
   pthread_t processor;
   sem_init(&frameMatSema,0,0);
   pthread_create (&processor, NULL, processorThread, NULL);
-  printf("Pthreads created\n");
 
   std::string ball_string;
   std::string home1_string;
