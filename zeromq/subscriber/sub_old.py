@@ -20,7 +20,7 @@ import time
 import thread
 import zmq
 
-ip = "192.168.1.28"
+ip = "192.168.1.45"
 port = "5563"
 robot_update_delay = 0.01
 

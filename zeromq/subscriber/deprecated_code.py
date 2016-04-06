@@ -84,3 +84,75 @@ def score_goal():
     print "Finished score_goal"
 
 
+######################
+# LOW-PASS FILTER
+######################
+
+team1_robot_state = robot.State()
+# team2_robot_state = robot.State()
+ball = Point.Point()
+
+# Low pass filter: y[n] = ((1-a) * input[n]) + (a * y[n])
+alpha = 0.85
+
+# Define a function for the thread
+def receive(threadName, *args):
+    # Prepare our context and publisher
+    context    = zmq.Context()
+    subscriber = context.socket(zmq.SUB)
+    subscriber.connect("tcp://%s:%s" % (ip, port))
+    subscriber.setsockopt(zmq.SUBSCRIBE, b"A")
+
+
+    first = True
+
+    while True:
+        address, contents = subscriber.recv_multipart()
+
+        contentArray = contents.split()
+
+        if first:
+            first = False
+
+            # home robot
+            home_robot_angle = contentArray[0]
+            home_robot_x = contentArray[1]
+            home_robot_y = contentArray[2]
+
+            # ball
+            ball_x = contentArray[6]
+            ball_y = contentArray[7]
+
+        else:
+            # home robot
+            home_robot_angle = contentArray[0]
+            home_robot_x = ((1-alpha) * float(contentArray[1])) + (alpha * float(home_robot_x))
+            home_robot_y = ((1-alpha) * float(contentArray[2])) + (alpha * float(home_robot_y))
+
+            # away robot
+            # away_robot_angle = contentArray[3]
+            # away_robot_x = contentArray[4]
+            # away_robot_y = contentArray[5]
+
+            # ball
+            ball_x = ((1-alpha) * param.pixelToMeter(float(contentArray[6]))) + (alpha * float(ball_x))
+            ball_y = ((1-alpha) * param.pixelToMeter(float(contentArray[7]))) + (alpha * float(ball_y))
+
+        # set state
+        team1_robot_state.pos_theta_est = param.degreeToRadian(float(home_robot_angle))
+        team1_robot_state.pos_x_est = param.pixelToMeter(float(home_robot_x))
+        team1_robot_state.pos_y_est = param.pixelToMeter(float(home_robot_y))
+        # team2_robot_state.pos_theta_est = param.degreeToRadian(float(away_robot_angle))
+        # team2_robot_state.pos_x_est = param.pixelToMeter(float(away_robot_x))
+        # team2_robot_state.pos_y_est = param.pixelToMeter(float(away_robot_y))
+        ball.x = float(ball_x)
+        ball.y = float(ball_y)
+
+        try:
+            mutex.release()
+        except:
+            pass
+
+    # We never get here but clean up anyhow
+    subscriber.close()
+    context.term()

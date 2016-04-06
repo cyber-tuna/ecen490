@@ -3,9 +3,9 @@ import serial
 
 
 #rc.M1Forward(0x80,0)
-rc.M1Forward(0x81,0)
-rc.M2Forward(0x80,0)
-rc.M1Forward(0x80,0)
+# rc.M1Forward(0x81,0)
+# rc.M2Forward(0x80,0)
+# rc.M1Forward(0x80,0)
 
 
 while 1:
