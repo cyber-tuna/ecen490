@@ -2,7 +2,7 @@
 Robot Soccer - Team BaeMax
 
 #### How do I use this repository?
-For our robot system architecture we chose to use a python publisher/subscriber model. The main execution loop is located at zeromq/subscriber/sub.py. 
+The main program is located at zeromq/subscriber/sub.py. zeromq/subscriber/Experimental contains experimental code that was not used in competition, but could be of value to furture teams. See individual repository folders for instructions on how to use.
 
 #### Resources
 * [Team Wiki](https://github.com/jar3dp/ecen490/wiki)
