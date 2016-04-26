@@ -156,3 +156,37 @@ def receive(threadName, *args):
     # We never get here but clean up anyhow
     subscriber.close()
     context.term()
+
+######################
+# ALTERNATIVE GO TO POINT
+######################
+
+def go_to_point2(x, y, lookAtPoint=None):
+    print "go_to_point2"
+    if lookAtPoint == None:
+      lookAtPoint = ball
+    desired_x = x
+    desired_y = y
+
+    vektor_x = (desired_x-team1_robot_state.pos_x_est) * param.SCALE_VEL
+    vektor_y = (desired_y-team1_robot_state.pos_y_est) * param.SCALE_VEL
+
+    mag = math.sqrt(vektor_x**2+vektor_y**2)
+    angle = math.atan2(lookAtPoint.y-team1_robot_state.pos_y_est, lookAtPoint.x-desired_x-team1_robot_state.pos_x_est)
+
+    delta_angle = angle-desired_x-team1_robot_state.pos_theta_est
+
+    bestDelta = math.atan2(math.sin(delta_angle), math.cos(delta_angle)) * param.SCALE_OMEGA
+    #print bestDelta
+    if mag >= param.MAX_SPEED:
+      vektor_x = (param.MAX_SPEED/mag)*vektor_x
+      vektor_y = (param.MAX_SPEED/mag)*vektor_y
+    elif mag < param.MIN_SPEED:
+      vektor_x = 0
+      vektor_y = 0
+
+    if bestDelta < param.MIN_DELTA and bestDelta > -param.MIN_DELTA:
+      bestDelta = 0
+    # self.sendCommand(vektor_x, vektor_y, bestDelta, self.robotLocation.theta)
+
+    velchange.goXYOmegaTheta(vektor_x, vektor_y, bestDelta , team1_robot_state.pos_theta_est)
