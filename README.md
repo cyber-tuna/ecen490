@@ -9,6 +9,6 @@ The main program is located at zeromq/subscriber/sub.py. zeromq/subscriber/Exper
 
 #### Contact
 * Chad Josephson - Motion Control 
-* Jared Patten - System Architecture and AI
-* Jared Ririe - Vision
-* Peter Zabriskie - Mechanical 
+* [Jared Patten](https://github.com/jar3dp) - System Architecture and AI
+* [Jared Ririe](https://github.com/jaredririe) - Vision
+* [Peter Zabriskie](https://github.com/pzabriskie) - Mechanical 
